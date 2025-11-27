@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/models/category_model.dart';
+import '../../data/models/account_model.dart';
 import '../../data/services/local_storage_service.dart';
+import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 
@@ -20,14 +22,22 @@ class AddTransactionPage extends StatefulWidget {
 }
 
 class _AddTransactionPageState extends State<AddTransactionPage> {
-  late String _transactionType = 'expense';
-  late Category _selectedCategory;
-  late DateTime _selectedDate = DateTime.now();
+  final SupabaseService _supabase = SupabaseService.instance;
+  
+  String _transactionType = 'expense'; // expense, income, transfer
+  Category? _selectedCategory;
+  Account? _selectedAccount;
+  Account? _destinationAccount; // For transfers
+  DateTime _selectedDate = DateTime.now();
   late final TextEditingController _amountController;
   late final TextEditingController _descriptionController;
+  
   List<Category> _categories = [];
   List<Category> _filteredCategories = [];
+  List<Account> _accounts = [];
   String _displayAmount = '0';
+  bool _isLoading = false;
+  bool _isDataLoading = true;
 
   @override
   void initState() {
@@ -40,24 +50,66 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
     if (widget.transaction != null) {
       _displayAmount = widget.transaction!.amount.toInt().toString();
+      _transactionType = widget.transaction!.type;
+      _selectedDate = widget.transaction!.date;
     }
-    _loadCategories();
+    _loadData();
   }
 
-  Future<void> _loadCategories() async {
-    _categories = await widget.localStorage.getCategories();
-    _transactionType = widget.transaction?.type ?? 'expense';
+  Future<void> _loadData() async {
+    setState(() => _isDataLoading = true);
+    try {
+      // Try to load from Supabase first
+      _categories = await _supabase.getCategories();
+      _accounts = await _supabase.getAccounts();
+    } catch (e) {
+      // Fallback to local storage
+      _categories = await widget.localStorage.getCategories();
+      _accounts = await widget.localStorage.getAccounts();
+    }
+    
     _updateFilteredCategories();
+    
+    // Set default account
+    if (_accounts.isNotEmpty) {
+      if (widget.transaction != null) {
+        _selectedAccount = _accounts.firstWhere(
+          (a) => a.id == widget.transaction!.accountId,
+          orElse: () => _accounts.first,
+        );
+        if (widget.transaction!.destinationAccountId != null) {
+          _destinationAccount = _accounts.firstWhere(
+            (a) => a.id == widget.transaction!.destinationAccountId,
+            orElse: () => _accounts.first,
+          );
+        }
+      } else {
+        _selectedAccount = _accounts.first;
+      }
+    }
+    
+    if (mounted) setState(() => _isDataLoading = false);
   }
 
   void _updateFilteredCategories() {
-    _filteredCategories = _categories
-        .where((c) => c.type == _transactionType)
-        .toList();
-    if (_filteredCategories.isNotEmpty) {
-      _selectedCategory = _filteredCategories.first;
+    if (_transactionType == 'transfer') {
+      _filteredCategories = [];
+      _selectedCategory = null;
+    } else {
+      _filteredCategories = _categories
+          .where((c) => c.type == _transactionType)
+          .toList();
+      if (_filteredCategories.isNotEmpty) {
+        if (widget.transaction != null) {
+          _selectedCategory = _filteredCategories.firstWhere(
+            (c) => c.id == widget.transaction!.categoryId,
+            orElse: () => _filteredCategories.first,
+          );
+        } else {
+          _selectedCategory = _filteredCategories.first;
+        }
+      }
     }
-    setState(() {});
   }
 
   Future<void> _selectDate() async {
@@ -95,7 +147,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     });
   }
 
-  void _saveTransaction() {
+  Future<void> _saveTransaction() async {
     final amount = double.tryParse(_displayAmount) ?? 0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,41 +156,98 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       return;
     }
 
-    if (widget.transaction == null) {
-      final newTransaction = Transaction(
-        id: DateTime.now().millisecondsSinceEpoch,
-        accountId: 1,
-        categoryId: _selectedCategory.id,
-        type: _transactionType,
-        amount: amount,
-        date: _selectedDate,
-        description: _descriptionController.text,
-        createdAt: DateTime.now(),
-        categoryName: _selectedCategory.name,
+    if (_selectedAccount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih akun terlebih dahulu')),
       );
-      widget.localStorage.saveTransaction(newTransaction);
-    } else {
-      final updatedTransaction = widget.transaction!.copyWith(
-        type: _transactionType,
-        amount: amount,
-        date: _selectedDate,
-        description: _descriptionController.text,
-        categoryId: _selectedCategory.id,
-        categoryName: _selectedCategory.name,
-      );
-      widget.localStorage.updateTransaction(updatedTransaction);
+      return;
     }
 
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          widget.transaction == null
-              ? 'Transaksi berhasil ditambahkan'
-              : 'Transaksi berhasil diperbarui',
-        ),
-      ),
-    );
+    if (_transactionType == 'transfer' && _destinationAccount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih akun tujuan transfer')),
+      );
+      return;
+    }
+
+    if (_transactionType == 'transfer' && _selectedAccount!.id == _destinationAccount!.id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Akun asal dan tujuan tidak boleh sama')),
+      );
+      return;
+    }
+
+    if (_transactionType != 'transfer' && _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih kategori terlebih dahulu')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      if (widget.transaction == null) {
+        // Create new transaction
+        final newTransaction = Transaction(
+          id: DateTime.now().millisecondsSinceEpoch,
+          accountId: _selectedAccount!.id,
+          destinationAccountId: _transactionType == 'transfer' ? _destinationAccount!.id : null,
+          categoryId: _selectedCategory?.id ?? 0,
+          type: _transactionType,
+          amount: amount,
+          date: _selectedDate,
+          description: _descriptionController.text,
+          createdAt: DateTime.now(),
+          categoryName: _selectedCategory?.name,
+          accountName: _selectedAccount!.name,
+          destinationAccountName: _destinationAccount?.name,
+        );
+        
+        // Save to Supabase
+        await _supabase.saveTransaction(newTransaction);
+        // Also save locally for offline access
+        await widget.localStorage.saveTransaction(newTransaction);
+      } else {
+        // Update existing transaction
+        final updatedTransaction = widget.transaction!.copyWith(
+          type: _transactionType,
+          amount: amount,
+          date: _selectedDate,
+          description: _descriptionController.text,
+          categoryId: _selectedCategory?.id ?? 0,
+          categoryName: _selectedCategory?.name,
+          accountId: _selectedAccount!.id,
+          accountName: _selectedAccount!.name,
+          destinationAccountId: _transactionType == 'transfer' ? _destinationAccount?.id : null,
+          destinationAccountName: _destinationAccount?.name,
+        );
+        
+        await _supabase.updateTransaction(updatedTransaction);
+        await widget.localStorage.updateTransaction(updatedTransaction);
+      }
+
+      if (mounted) {
+        Navigator.pop(context, true); // Return true to indicate data changed
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.transaction == null
+                  ? 'Transaksi berhasil ditambahkan'
+                  : 'Transaksi berhasil diperbarui',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -150,8 +259,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isExpense = _transactionType == 'expense';
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -163,7 +270,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         ),
         centerTitle: true,
         title: Text(
-          isExpense ? 'Expense' : 'Income',
+          _transactionType == 'expense' 
+              ? 'Expense' 
+              : _transactionType == 'income' 
+                  ? 'Income' 
+                  : 'Transfer',
           style: const TextStyle(
             color: AppColors.text,
             fontSize: 18,
@@ -179,7 +290,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       ),
       body: Column(
         children: [
-          // Toggle Expense/Income
+          // Toggle Expense/Income/Transfer
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Container(
@@ -190,56 +301,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _transactionType = 'expense';
-                          _updateFilteredCategories();
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isExpense ? AppColors.expense : Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Expense',
-                            style: TextStyle(
-                              color: isExpense ? Colors.white : AppColors.textSecondary,
-                              fontWeight: isExpense ? FontWeight.w600 : FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _transactionType = 'income';
-                          _updateFilteredCategories();
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: !isExpense ? AppColors.primary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Income',
-                            style: TextStyle(
-                              color: !isExpense ? Colors.white : AppColors.textSecondary,
-                              fontWeight: !isExpense ? FontWeight.w600 : FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildTypeTab('Expense', 'expense', AppColors.expense),
+                  _buildTypeTab('Income', 'income', AppColors.primary),
+                  _buildTypeTab('Transfer', 'transfer', AppColors.cardBlue),
                 ],
               ),
             ),
@@ -281,38 +345,127 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: isExpense ? AppColors.expense : AppColors.primary,
+                        color: _transactionType == 'expense' 
+                            ? AppColors.expense 
+                            : _transactionType == 'income'
+                                ? AppColors.primary
+                                : AppColors.cardBlue,
                       ),
                     ),
                   ),
 
-                  // Category Field
+                  // Source Account Field
                   _buildFormField(
-                    label: 'Kategori',
-                    child: _filteredCategories.isNotEmpty
-                        ? DropdownButtonHideUnderline(
-                            child: DropdownButton<Category>(
-                              value: _selectedCategory,
-                              isExpanded: true,
-                              icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
-                              items: _filteredCategories.map((category) {
-                                return DropdownMenuItem<Category>(
-                                  value: category,
-                                  child: Text(
-                                    category.name,
-                                    style: const TextStyle(fontSize: 16, color: AppColors.text),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (category) {
-                                if (category != null) {
-                                  setState(() => _selectedCategory = category);
-                                }
-                              },
-                            ),
-                          )
-                        : const Text('Loading...', style: TextStyle(color: AppColors.textSecondary)),
+                    label: _transactionType == 'transfer' ? 'Dari Akun' : 'Akun',
+                    child: _isDataLoading
+                        ? const Text('Loading...', style: TextStyle(color: AppColors.textSecondary))
+                        : _accounts.isNotEmpty
+                            ? DropdownButtonHideUnderline(
+                                child: DropdownButton<Account>(
+                                  value: _selectedAccount,
+                                  isExpanded: true,
+                                  icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                                  items: _accounts.map((account) {
+                                    return DropdownMenuItem<Account>(
+                                      value: account,
+                                      child: Row(
+                                        children: [
+                                          Icon(_getAccountIcon(account.type), size: 20, color: AppColors.primary),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            account.name,
+                                            style: const TextStyle(fontSize: 16, color: AppColors.text),
+                                          ),
+                                          const Spacer(),
+                                          Text(
+                                            CurrencyFormatter.formatCurrency(account.balance),
+                                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (account) {
+                                    if (account != null) {
+                                      setState(() => _selectedAccount = account);
+                                    }
+                                  },
+                                ),
+                              )
+                            : const Text('Belum ada akun', style: TextStyle(color: AppColors.textSecondary)),
                   ),
+
+                  // Destination Account Field (for transfers)
+                  if (_transactionType == 'transfer')
+                    _buildFormField(
+                      label: 'Ke Akun',
+                      child: _accounts.isNotEmpty
+                          ? DropdownButtonHideUnderline(
+                              child: DropdownButton<Account>(
+                                value: _destinationAccount,
+                                isExpanded: true,
+                                hint: const Text('Pilih akun tujuan'),
+                                icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                                items: _accounts
+                                    .where((a) => a.id != _selectedAccount?.id)
+                                    .map((account) {
+                                  return DropdownMenuItem<Account>(
+                                    value: account,
+                                    child: Row(
+                                      children: [
+                                        Icon(_getAccountIcon(account.type), size: 20, color: AppColors.cardBlue),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          account.name,
+                                          style: const TextStyle(fontSize: 16, color: AppColors.text),
+                                        ),
+                                        const Spacer(),
+                                        Text(
+                                          CurrencyFormatter.formatCurrency(account.balance),
+                                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (account) {
+                                  if (account != null) {
+                                    setState(() => _destinationAccount = account);
+                                  }
+                                },
+                              ),
+                            )
+                          : const Text('Belum ada akun', style: TextStyle(color: AppColors.textSecondary)),
+                    ),
+
+                  // Category Field (not for transfers)
+                  if (_transactionType != 'transfer')
+                    _buildFormField(
+                      label: 'Kategori',
+                      child: _filteredCategories.isNotEmpty
+                          ? DropdownButtonHideUnderline(
+                              child: DropdownButton<Category>(
+                                value: _selectedCategory,
+                                isExpanded: true,
+                                icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                                items: _filteredCategories.map((category) {
+                                  return DropdownMenuItem<Category>(
+                                    value: category,
+                                    child: Text(
+                                      category.name,
+                                      style: const TextStyle(fontSize: 16, color: AppColors.text),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (category) {
+                                  if (category != null) {
+                                    setState(() => _selectedCategory = category);
+                                  }
+                                },
+                              ),
+                            )
+                          : const Text('Loading...', style: TextStyle(color: AppColors.textSecondary)),
+                    ),
 
                   // Description Field
                   _buildFormField(
@@ -373,21 +526,27 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _saveTransaction,
+                    onPressed: _isLoading ? null : _saveTransaction,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
-                      widget.transaction == null ? 'Simpan' : 'Update',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            widget.transaction == null ? 'Simpan' : 'Update',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -396,6 +555,51 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildTypeTab(String label, String type, Color activeColor) {
+    final isSelected = _transactionType == type;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _transactionType = type;
+            _updateFilteredCategories();
+          });
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected ? activeColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getAccountIcon(String type) {
+    switch (type) {
+      case 'bank':
+        return Icons.account_balance;
+      case 'ewallet':
+        return Icons.phone_android;
+      case 'cash':
+        return Icons.money;
+      case 'savings':
+        return Icons.savings;
+      default:
+        return Icons.wallet;
+    }
   }
 
   Widget _buildFormField({required String label, required Widget child}) {

@@ -3,19 +3,27 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/models/category_model.dart';
 import '../../data/services/local_storage_service.dart';
+import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 
 class StatisticsPage extends StatefulWidget {
   final LocalStorageService localStorage;
+  final VoidCallback? onDataChanged;
 
-  const StatisticsPage({super.key, required this.localStorage});
+  const StatisticsPage({
+    super.key, 
+    required this.localStorage,
+    this.onDataChanged,
+  });
 
   @override
   State<StatisticsPage> createState() => _StatisticsPageState();
 }
 
 class _StatisticsPageState extends State<StatisticsPage> {
+  final SupabaseService _supabase = SupabaseService.instance;
+  
   List<Transaction> _transactions = [];
   List<Category> _categories = [];
   String _selectedType = 'expense';
@@ -39,13 +47,48 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   Future<void> _loadData() async {
-    _transactions = await widget.localStorage.getTransactions();
-    _categories = await widget.localStorage.getCategories();
+    try {
+      // Try Supabase first
+      _transactions = await _supabase.getTransactions();
+      _categories = await _supabase.getCategories();
+    } catch (e) {
+      // Fallback to local storage
+      _transactions = await widget.localStorage.getTransactions();
+      _categories = await widget.localStorage.getCategories();
+    }
     if (mounted) setState(() {});
   }
 
   List<Transaction> get _filteredTransactions {
-    return _transactions.where((t) => t.type == _selectedType).toList();
+    final now = DateTime.now();
+    var filtered = _transactions.where((t) => t.type == _selectedType).toList();
+    
+    // Filter by period
+    switch (_selectedPeriod) {
+      case 'Daily':
+        filtered = filtered.where((t) => 
+          t.date.year == now.year && 
+          t.date.month == now.month && 
+          t.date.day == now.day
+        ).toList();
+        break;
+      case 'Weekly':
+        final weekStart = now.subtract(Duration(days: now.weekday - 1));
+        filtered = filtered.where((t) => 
+          t.date.isAfter(weekStart.subtract(const Duration(days: 1)))
+        ).toList();
+        break;
+      case 'Monthly':
+        filtered = filtered.where((t) => 
+          t.date.year == now.year && t.date.month == now.month
+        ).toList();
+        break;
+      case 'Yearly':
+        filtered = filtered.where((t) => t.date.year == now.year).toList();
+        break;
+    }
+    
+    return filtered;
   }
 
   Map<String, double> get _categoryTotals {
@@ -85,159 +128,162 @@ class _StatisticsPageState extends State<StatisticsPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Toggle Expense/Income
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Container(
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedType = 'expense'),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _selectedType == 'expense' 
-                              ? AppColors.expense 
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(22),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Expense',
-                            style: TextStyle(
-                              color: _selectedType == 'expense' 
-                                  ? Colors.white 
-                                  : AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedType = 'income'),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _selectedType == 'income' 
-                              ? AppColors.primary 
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(22),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Income',
-                            style: TextStyle(
-                              color: _selectedType == 'income' 
-                                  ? Colors.white 
-                                  : AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Period Dropdown
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButton<String>(
-                value: _selectedPeriod,
-                isExpanded: true,
-                underline: const SizedBox(),
-                icon: const Icon(Icons.keyboard_arrow_down),
-                items: ['Daily', 'Weekly', 'Monthly', 'Yearly']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (value) => setState(() => _selectedPeriod = value!),
-              ),
-            ),
-          ),
-
-          // Donut Chart with center text
-          SizedBox(
-            height: 220,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                PieChart(
-                  PieChartData(
-                    sections: _buildPieChartSections(),
-                    sectionsSpace: 3,
-                    centerSpaceRadius: 60,
-                    startDegreeOffset: -90,
-                  ),
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        color: AppColors.primary,
+        child: ListView(
+          children: [
+            // Toggle Expense/Income
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(22),
                 ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
+                child: Row(
                   children: [
-                    Text(
-                      'Total ${_selectedType == 'expense' ? 'Expense' : 'Income'}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedType = 'expense'),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _selectedType == 'expense' 
+                                ? AppColors.expense 
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Expense',
+                              style: TextStyle(
+                                color: _selectedType == 'expense' 
+                                    ? Colors.white 
+                                    : AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      CurrencyFormatter.formatCurrency(_totalAmount),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.text,
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedType = 'income'),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _selectedType == 'income' 
+                                ? AppColors.primary 
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Income',
+                              style: TextStyle(
+                                color: _selectedType == 'income' 
+                                    ? Colors.white 
+                                    : AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
 
-          // Category List
-          Expanded(
-            child: _categoryTotals.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Tidak ada data',
-                      style: TextStyle(color: AppColors.textSecondary),
+            // Period Dropdown
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButton<String>(
+                  value: _selectedPeriod,
+                  isExpanded: true,
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.keyboard_arrow_down),
+                  items: ['Daily', 'Weekly', 'Monthly', 'Yearly']
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (value) => setState(() => _selectedPeriod = value!),
+                ),
+              ),
+            ),
+
+            // Donut Chart with center text
+            SizedBox(
+              height: 220,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  PieChart(
+                    PieChartData(
+                      sections: _buildPieChartSections(),
+                      sectionsSpace: 3,
+                      centerSpaceRadius: 60,
+                      startDegreeOffset: -90,
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    itemCount: _categoryTotals.length,
-                    itemBuilder: (context, index) {
-                      final entry = _categoryTotals.entries.elementAt(index);
-                      final color = _categoryColors[index % _categoryColors.length];
-                      return _buildCategoryItem(entry.key, entry.value, color);
-                    },
                   ),
-          ),
-        ],
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Total ${_selectedType == 'expense' ? 'Expense' : 'Income'}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        CurrencyFormatter.formatCurrency(_totalAmount),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.text,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Category List
+            if (_categoryTotals.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(
+                  child: Text(
+                    'Tidak ada data',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+              )
+            else
+              ...List.generate(_categoryTotals.length, (index) {
+                final entry = _categoryTotals.entries.elementAt(index);
+                final color = _categoryColors[index % _categoryColors.length];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _buildCategoryItem(entry.key, entry.value, color),
+                );
+              }),
+            
+            const SizedBox(height: 80), // Space for FAB
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      // FAB is handled by HomePage
     );
   }
 

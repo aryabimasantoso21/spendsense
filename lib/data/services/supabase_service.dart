@@ -66,6 +66,7 @@ class SupabaseService {
     try {
       await _client.from('transactions').insert({
         'account_id': transaction.accountId,
+        'destination_account_id': transaction.destinationAccountId,
         'category_id': transaction.categoryId,
         'type': transaction.type,
         'amount': transaction.amount,
@@ -73,6 +74,7 @@ class SupabaseService {
         'description': transaction.description,
         'created_at': DateTime.now().toIso8601String(),
       });
+      // Note: Account balance is updated automatically by database trigger
     } catch (e) {
       rethrow;
     }
@@ -96,6 +98,7 @@ class SupabaseService {
   Future<void> deleteTransaction(int id) async {
     try {
       await _client.from('transactions').delete().eq('id', id);
+      // Note: Account balance is updated automatically by database trigger
     } catch (e) {
       rethrow;
     }
@@ -110,7 +113,9 @@ class SupabaseService {
         'category_id': transaction.categoryId,
         'date': transaction.date.toIso8601String(),
         'account_id': transaction.accountId,
+        'destination_account_id': transaction.destinationAccountId,
       }).eq('id', transaction.id);
+      // Note: Account balance is updated automatically by database trigger
     } catch (e) {
       rethrow;
     }

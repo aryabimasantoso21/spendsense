@@ -1,18 +1,21 @@
 class Transaction {
   final int id;
   final int accountId;
+  final int? destinationAccountId; // For transfers
   final int categoryId; // Can be 0 for Supabase transactions (uses categoryName instead)
-  final String type; // 'expense' or 'income'
+  final String type; // 'expense', 'income', or 'transfer'
   final double amount;
   final DateTime date;
   final String description;
   final DateTime createdAt;
   final String? categoryName; // Used with Supabase (stores name instead of ID)
   final String? accountName; // Optional, for display purposes
+  final String? destinationAccountName; // For transfers
 
   Transaction({
     required this.id,
     required this.accountId,
+    this.destinationAccountId,
     required this.categoryId,
     required this.type,
     required this.amount,
@@ -21,12 +24,14 @@ class Transaction {
     required this.createdAt,
     this.categoryName,
     this.accountName,
+    this.destinationAccountName,
   });
 
   // Create a copy of Transaction with modified fields
   Transaction copyWith({
     int? id,
     int? accountId,
+    int? destinationAccountId,
     int? categoryId,
     String? type,
     double? amount,
@@ -35,10 +40,12 @@ class Transaction {
     DateTime? createdAt,
     String? categoryName,
     String? accountName,
+    String? destinationAccountName,
   }) {
     return Transaction(
       id: id ?? this.id,
       accountId: accountId ?? this.accountId,
+      destinationAccountId: destinationAccountId ?? this.destinationAccountId,
       categoryId: categoryId ?? this.categoryId,
       type: type ?? this.type,
       amount: amount ?? this.amount,
@@ -47,6 +54,7 @@ class Transaction {
       createdAt: createdAt ?? this.createdAt,
       categoryName: categoryName ?? this.categoryName,
       accountName: accountName ?? this.accountName,
+      destinationAccountName: destinationAccountName ?? this.destinationAccountName,
     );
   }
 
@@ -55,6 +63,7 @@ class Transaction {
     return {
       'id': id,
       'account_id': accountId,
+      'destination_account_id': destinationAccountId,
       'category_id': categoryId,
       'type': type,
       'amount': amount,
@@ -69,6 +78,7 @@ class Transaction {
     return Transaction(
       id: json['id'] as int,
       accountId: json['account_id'] as int,
+      destinationAccountId: json['destination_account_id'] as int?,
       categoryId: json['category_id'] as int? ?? 0,
       type: json['type'] as String,
       amount: (json['amount'] as num).toDouble(),
@@ -77,6 +87,7 @@ class Transaction {
       createdAt: json['created_at'] is String ? DateTime.parse(json['created_at'] as String) : json['created_at'] as DateTime,
       categoryName: json['categoryName'] as String?,
       accountName: json['accountName'] as String?,
+      destinationAccountName: json['destinationAccountName'] as String?,
     );
   }
 }

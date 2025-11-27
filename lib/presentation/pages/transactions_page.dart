@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/models/category_model.dart';
 import '../../data/services/local_storage_service.dart';
+import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
-import 'add_transaction_page.dart';
 
 class TransactionsPage extends StatefulWidget {
   final LocalStorageService localStorage;
@@ -21,9 +21,12 @@ class TransactionsPage extends StatefulWidget {
 }
 
 class _TransactionsPageState extends State<TransactionsPage> {
+  final SupabaseService _supabase = SupabaseService.instance;
+  
   List<Transaction> _transactions = [];
   List<Category> _categories = [];
-  String _selectedPeriod = 'Today';
+  String _selectedPeriod = 'Month';
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -32,17 +35,48 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Future<void> _loadData() async {
-    _transactions = await widget.localStorage.getTransactions();
-    _categories = await widget.localStorage.getCategories();
-    if (mounted) {
-      setState(() {});
+    setState(() => _isLoading = true);
+    try {
+      // Try Supabase first
+      _transactions = await _supabase.getTransactions();
+      _categories = await _supabase.getCategories();
+    } catch (e) {
+      // Fallback to local storage
+      _transactions = await widget.localStorage.getTransactions();
+      _categories = await widget.localStorage.getCategories();
     }
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // Get filtered transactions based on selected period
+  List<Transaction> get _filteredTransactions {
+    final now = DateTime.now();
+    
+    return _transactions.where((t) {
+      switch (_selectedPeriod) {
+        case 'Today':
+          return t.date.year == now.year && 
+                 t.date.month == now.month && 
+                 t.date.day == now.day;
+        case 'Week':
+          final weekStart = now.subtract(Duration(days: now.weekday - 1));
+          return t.date.isAfter(weekStart.subtract(const Duration(days: 1)));
+        case 'Month':
+          return t.date.year == now.year && t.date.month == now.month;
+        case 'Year':
+          return t.date.year == now.year;
+        default:
+          return true;
+      }
+    }).toList();
   }
 
   // Group transactions by date
   Map<DateTime, List<Transaction>> get _groupedTransactions {
     final grouped = <DateTime, List<Transaction>>{};
-    final sorted = List<Transaction>.from(_transactions)
+    final sorted = List<Transaction>.from(_filteredTransactions)
       ..sort((a, b) => b.date.compareTo(a.date));
     
     for (var t in sorted) {
@@ -52,18 +86,23 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return grouped;
   }
 
-  double get _totalIncome => _transactions
+  double get _totalIncome => _filteredTransactions
       .where((t) => t.type == 'income')
       .fold(0.0, (sum, t) => sum + t.amount);
 
-  double get _totalExpense => _transactions
+  double get _totalExpense => _filteredTransactions
       .where((t) => t.type == 'expense')
       .fold(0.0, (sum, t) => sum + t.amount);
 
   double get _totalBalance => _totalIncome - _totalExpense;
 
   Future<void> _deleteTransaction(int id) async {
-    await widget.localStorage.deleteTransaction(id);
+    try {
+      await _supabase.deleteTransaction(id);
+    } catch (e) {
+      // Fallback to local delete
+      await widget.localStorage.deleteTransaction(id);
+    }
     await _loadData();
     widget.onDataChanged();
   }
@@ -233,46 +272,39 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
           // Transactions List
           Expanded(
-            child: _transactions.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.receipt_long, size: 64, color: AppColors.textTertiary),
-                        SizedBox(height: 16),
-                        Text(
-                          'Belum ada transaksi',
-                          style: TextStyle(color: AppColors.textSecondary),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                : _filteredTransactions.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.receipt_long, size: 64, color: AppColors.textTertiary),
+                            SizedBox(height: 16),
+                            Text(
+                              'Belum ada transaksi',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    itemCount: _groupedTransactions.length,
-                    itemBuilder: (context, index) {
-                      final date = _groupedTransactions.keys.elementAt(index);
-                      final transactions = _groupedTransactions[date]!;
-                      return _buildDateGroup(date, transactions);
-                    },
-                  ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadData,
+                        color: AppColors.primary,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          itemCount: _groupedTransactions.length,
+                          itemBuilder: (context, index) {
+                            final date = _groupedTransactions.keys.elementAt(index);
+                            final transactions = _groupedTransactions[date]!;
+                            return _buildDateGroup(date, transactions);
+                          },
+                        ),
+                      ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddTransactionPage(localStorage: widget.localStorage),
-            ),
-          );
-          await _loadData();
-          widget.onDataChanged();
-        },
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      // FAB is handled by HomePage
     );
   }
 
@@ -294,7 +326,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           child: Row(
             children: [
               Text(
-                '${date.day.toString().padLeft(2, '0')}',
+                date.day.toString().padLeft(2, '0'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

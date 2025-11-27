@@ -7,6 +7,7 @@ import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 
+import 'add_transaction_page.dart';
 import 'transactions_page.dart';
 import 'accounts_page.dart';
 import 'statistics_page.dart';
@@ -79,6 +80,19 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Navigate to add transaction page - used by central FAB
+  Future<void> _navigateToAddTransaction() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTransactionPage(localStorage: _localStorage),
+      ),
+    );
+    if (result == true) {
+      await _loadData();
+    }
+  }
+
   double get _totalIncome => _transactions
       .where((t) => t.type == 'income')
       .fold(0.0, (sum, t) => sum + t.amount);
@@ -104,11 +118,18 @@ class _HomePageState extends State<HomePage> {
         children: [
           _buildDashboard(),
           TransactionsPage(localStorage: _localStorage, onDataChanged: _loadData),
-          StatisticsPage(localStorage: _localStorage),
+          StatisticsPage(localStorage: _localStorage, onDataChanged: _loadData),
           AccountsPage(localStorage: _localStorage, onDataChanged: _loadData),
           SettingsPage(localStorage: _localStorage),
         ],
       ),
+      floatingActionButton: _currentIndex != 4 // Show FAB on all tabs except Profile/Settings
+          ? FloatingActionButton(
+              onPressed: _navigateToAddTransaction,
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
