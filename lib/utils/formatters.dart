@@ -63,6 +63,11 @@ class CurrencyFormatter {
     return formatter.format(amount);
   }
 
+  static String formatNumber(double amount) {
+    final formatter = NumberFormat('#,###', 'id_ID');
+    return formatter.format(amount);
+  }
+
   static String formatCurrencyCompact(double amount,
       {String currencySymbol = 'Rp'}) {
     if (amount >= 1000000) {

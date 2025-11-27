@@ -22,19 +22,19 @@ class Category {
     );
   }
 
-  // Convert Category to JSON
+  // Convert Category to JSON (untuk Supabase)
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'category_id': id, // Supabase pakai category_id, bukan id
       'type': type,
       'name': name,
     };
   }
 
-  // Create Category from JSON
+  // Create Category from JSON (support struktur Supabase existing)
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: json['id'] ?? json['category_id'], // Support both 'id' and 'category_id'
+      id: json['id'] ?? json['category_id'] ?? 0, // Support both 'id' dan 'category_id'
       type: json['type'],
       name: json['name'],
     );

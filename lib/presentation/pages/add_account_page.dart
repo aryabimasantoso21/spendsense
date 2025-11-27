@@ -48,7 +48,7 @@ class _AddAccountPageState extends State<AddAccountPage> {
     );
 
     _localStorage.saveAccount(newAccount);
-    Navigator.pop(context);
+    Navigator.pop(context, true);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Akun berhasil ditambahkan')),
     );

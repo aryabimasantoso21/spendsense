@@ -10,6 +10,7 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -27,18 +28,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _register() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      setState(() => _errorMessage = 'Email dan password tidak boleh kosong');
-      return;
-    }
-
-    if (_passwordController.text != _confirmPasswordController.text) {
-      setState(() => _errorMessage = 'Password tidak cocok');
-      return;
-    }
-
-    if (_passwordController.text.length < 6) {
-      setState(() => _errorMessage = 'Password minimal 6 karakter');
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
@@ -76,8 +66,6 @@ class _RegisterPageState extends State<RegisterPage> {
       return 'Email sudah terdaftar';
     } else if (error.contains('Invalid email')) {
       return 'Email tidak valid';
-    } else if (error.contains('Password')) {
-      return 'Password tidak memenuhi syarat keamanan';
     }
     return error.contains('Exception:') ? error.replaceAll('Exception: ', '') : error;
   }
@@ -86,164 +74,199 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(AppPadding.lg),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const SizedBox(height: AppPadding.md),
-              Text(
-                'Buat Akun SpendSense',
-                style: AppTextStyles.heading2.copyWith(
-                  color: AppColors.text,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppPadding.sm),
-              Text(
-                'Daftar untuk mengelola keuangan Anda',
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppPadding.xl),
-
-              // Email Input
-              TextField(
-                controller: _emailController,
-                enabled: !_isLoading,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'Masukkan email Anda',
-                  prefixIcon: const Icon(Icons.email),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  contentPadding: const EdgeInsets.all(AppPadding.md),
-                ),
-              ),
-              const SizedBox(height: AppPadding.md),
-
-              // Password Input
-              TextField(
-                controller: _passwordController,
-                enabled: !_isLoading,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  hintText: 'Minimal 6 karakter',
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppPadding.lg),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Hero(
+                    tag: 'app_logo',
+                    child: Image.asset(
+                      'img/logo.png',
+                      height: 80,
+                      fit: BoxFit.contain,
                     ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: AppPadding.xl),
+                  Text(
+                    'Buat Akun Baru',
+                    style: AppTextStyles.heading1.copyWith(color: AppColors.text),
+                    textAlign: TextAlign.center,
                   ),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  contentPadding: const EdgeInsets.all(AppPadding.md),
-                ),
-              ),
-              const SizedBox(height: AppPadding.md),
-
-              // Confirm Password Input
-              TextField(
-                controller: _confirmPasswordController,
-                enabled: !_isLoading,
-                obscureText: _obscureConfirmPassword,
-                decoration: InputDecoration(
-                  labelText: 'Konfirmasi Password',
-                  hintText: 'Ulang password Anda',
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                  const SizedBox(height: AppPadding.sm),
+                  Text(
+                    'Kelola keuangan dengan lebih baik',
+                    style: AppTextStyles.bodySecondary,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppPadding.xl),
+                  TextFormField(
+                    controller: _emailController,
+                    enabled: !_isLoading,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email tidak boleh kosong';
+                      }
+                      if (!value.contains('@')) {
+                        return 'Masukkan email yang valid';
+                      }
+                      return null;
+                    },
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: AppPadding.md),
+                  TextFormField(
+                    controller: _passwordController,
+                    enabled: !_isLoading,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: const Icon(Icons.lock_outlined),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password tidak boleh kosong';
+                      }
+                      if (value.length < 6) {
+                        return 'Password minimal 6 karakter';
+                      }
+                      return null;
+                    },
                   ),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  contentPadding: const EdgeInsets.all(AppPadding.md),
-                ),
-              ),
-              const SizedBox(height: AppPadding.md),
-
-              // Error Message
-              if (_errorMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(AppPadding.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.expense.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.expense, width: 1),
+                  const SizedBox(height: AppPadding.md),
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    enabled: !_isLoading,
+                    obscureText: _obscureConfirmPassword,
+                    decoration: InputDecoration(
+                      labelText: 'Konfirmasi Password',
+                      prefixIcon: const Icon(Icons.lock_outlined),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        onPressed: () => setState(
+                            () => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Konfirmasi password tidak boleh kosong';
+                      }
+                      if (value != _passwordController.text) {
+                        return 'Password tidak cocok';
+                      }
+                      return null;
+                    },
                   ),
-                  child: Row(
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: AppPadding.md),
+                    Container(
+                      padding: const EdgeInsets.all(AppPadding.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.expense.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: AppColors.expense, size: 20),
+                          const SizedBox(width: AppPadding.sm),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: AppTextStyles.caption.copyWith(color: AppColors.expense),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppPadding.xl),
+                  SizedBox(
+                    height: 56,
+                    child: FilledButton(
+                      onPressed: _isLoading ? null : _register,
+                      style: FilledButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppBorderRadius.md),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Daftar Sekarang',
+                              style: AppTextStyles.subtitle.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: AppPadding.lg),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, color: AppColors.expense),
-                      const SizedBox(width: AppPadding.sm),
-                      Expanded(
+                      Text('Sudah punya akun? ', style: AppTextStyles.body),
+                      GestureDetector(
+                        onTap: _isLoading ? null : () => Navigator.of(context).pop(),
                         child: Text(
-                          _errorMessage!,
+                          'Masuk',
                           style: AppTextStyles.body.copyWith(
-                            color: AppColors.expense,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              const SizedBox(height: AppPadding.lg),
-
-              // Register Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _register,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.textSecondary.withValues(alpha: 0.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          'Daftar',
-                          style: AppTextStyles.subtitle.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

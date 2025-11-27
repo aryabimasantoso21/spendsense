@@ -33,41 +33,9 @@ class SupabaseService {
     required String password,
   }) async {
     try {
-      final response = await _client.auth.signUp(email: email, password: password);
-      
-      // Initialize default categories for new user
-      if (response.user != null) {
-        await _initializeDefaultCategories();
-      }
-      
-      return response;
+      return await _client.auth.signUp(email: email, password: password);
     } catch (e) {
       rethrow;
-    }
-  }
-
-  Future<void> _initializeDefaultCategories() async {
-    try {
-      // Insert default expense categories
-      for (var category in defaultExpenseCategories) {
-        await _client.from('categories').insert({
-          'user_id': user!.id,
-          'name': category.name,
-          'type': category.type,
-        });
-      }
-
-      // Insert default income categories
-      for (var category in defaultIncomeCategories) {
-        await _client.from('categories').insert({
-          'user_id': user!.id,
-          'name': category.name,
-          'type': category.type,
-        });
-      }
-    } catch (e) {
-      // Silently fail - categories might already exist
-      // This can happen if signUp completes but user doesn't login immediately
     }
   }
 
@@ -97,14 +65,12 @@ class SupabaseService {
   Future<void> saveTransaction(Transaction transaction) async {
     try {
       await _client.from('transactions').insert({
-        'id': transaction.id,
-        'user_id': user!.id,
-        'description': transaction.description,
-        'amount': transaction.amount,
-        'type': transaction.type,
-        'category_name': transaction.categoryName,
-        'date': transaction.date.toIso8601String(),
         'account_id': transaction.accountId,
+        'category_id': transaction.categoryId,
+        'type': transaction.type,
+        'amount': transaction.amount,
+        'date': transaction.date.toIso8601String(),
+        'description': transaction.description,
         'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
@@ -117,7 +83,6 @@ class SupabaseService {
       final data = await _client
           .from('transactions')
           .select()
-          .eq('user_id', user!.id)
           .order('date', ascending: false);
       
       return (data as List)
@@ -142,7 +107,7 @@ class SupabaseService {
         'description': transaction.description,
         'amount': transaction.amount,
         'type': transaction.type,
-        'category_name': transaction.categoryName,
+        'category_id': transaction.categoryId,
         'date': transaction.date.toIso8601String(),
         'account_id': transaction.accountId,
       }).eq('id', transaction.id);
@@ -155,8 +120,6 @@ class SupabaseService {
   Future<void> saveAccount(Account account) async {
     try {
       await _client.from('accounts').insert({
-        'id': account.id,
-        'user_id': user!.id,
         'name': account.name,
         'type': account.type,
         'balance': account.balance,
@@ -171,8 +134,7 @@ class SupabaseService {
     try {
       final data = await _client
           .from('accounts')
-          .select()
-          .eq('user_id', user!.id);
+          .select();
       
       return (data as List)
           .map((json) => Account.fromJson(json))
@@ -184,7 +146,7 @@ class SupabaseService {
 
   Future<void> deleteAccount(int id) async {
     try {
-      await _client.from('accounts').delete().eq('id', id);
+      await _client.from('accounts').delete().eq('account_id', id);
     } catch (e) {
       rethrow;
     }
@@ -196,7 +158,7 @@ class SupabaseService {
         'name': account.name,
         'type': account.type,
         'balance': account.balance,
-      }).eq('id', account.id);
+      }).eq('account_id', account.id);
     } catch (e) {
       rethrow;
     }
@@ -205,9 +167,9 @@ class SupabaseService {
   Future<void> saveCategories(List<Category> categories) async {
     try {
       for (var category in categories) {
+        // Supabase existing structure: category_id, type, name (no user_id)
         await _client.from('categories').upsert({
-          'id': category.id,
-          'user_id': user!.id,
+          'category_id': category.id,
           'name': category.name,
           'type': category.type,
         });
@@ -219,10 +181,10 @@ class SupabaseService {
 
   Future<List<Category>> getCategories() async {
     try {
+      // Supabase existing struktur tidak punya user_id, jadi get semua categories
       final data = await _client
           .from('categories')
-          .select()
-          .eq('user_id', user!.id);
+          .select();
       
       return (data as List)
           .map((json) => Category.fromJson(json))

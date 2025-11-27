@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'presentation/pages/splash_screen.dart';
-import 'presentation/pages/home_page.dart';
+import 'presentation/pages/home_page.dart'; // CORRECT import
 import 'presentation/pages/login_page.dart';
 import 'utils/constants.dart';
 import 'data/services/local_storage_service.dart';

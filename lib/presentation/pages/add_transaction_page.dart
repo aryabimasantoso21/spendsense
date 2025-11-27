@@ -27,6 +27,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   late final TextEditingController _descriptionController;
   List<Category> _categories = [];
   List<Category> _filteredCategories = [];
+  String _displayAmount = '0';
 
   @override
   void initState() {
@@ -37,6 +38,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     _descriptionController = TextEditingController(
       text: widget.transaction?.description ?? '',
     );
+    if (widget.transaction != null) {
+      _displayAmount = widget.transaction!.amount.toInt().toString();
+    }
     _loadCategories();
   }
 
@@ -70,15 +74,29 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     }
   }
 
-  void _saveTransaction() {
-    if (_amountController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Jumlah tidak boleh kosong')),
-      );
-      return;
-    }
+  void _onKeyPressed(String key) {
+    setState(() {
+      if (key == 'backspace') {
+        if (_displayAmount.length > 1) {
+          _displayAmount = _displayAmount.substring(0, _displayAmount.length - 1);
+        } else {
+          _displayAmount = '0';
+        }
+      } else if (key == 'done') {
+        _saveTransaction();
+      } else {
+        if (_displayAmount == '0') {
+          _displayAmount = key;
+        } else if (_displayAmount.length < 12) {
+          _displayAmount += key;
+        }
+      }
+      _amountController.text = _displayAmount;
+    });
+  }
 
-    final amount = double.tryParse(_amountController.text) ?? 0;
+  void _saveTransaction() {
+    final amount = double.tryParse(_displayAmount) ?? 0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Jumlah harus lebih dari 0')),
@@ -87,10 +105,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     }
 
     if (widget.transaction == null) {
-      // Create new transaction
       final newTransaction = Transaction(
         id: DateTime.now().millisecondsSinceEpoch,
-        accountId: 1, // Default to first account
+        accountId: 1,
         categoryId: _selectedCategory.id,
         type: _transactionType,
         amount: amount,
@@ -101,7 +118,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       );
       widget.localStorage.saveTransaction(newTransaction);
     } else {
-      // Update existing transaction
       final updatedTransaction = widget.transaction!.copyWith(
         type: _transactionType,
         amount: amount,
@@ -134,225 +150,297 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isExpense = _transactionType == 'expense';
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.transaction == null
-            ? 'Tambah Transaksi'
-            : 'Edit Transaksi'),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.background,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.text),
+          onPressed: () => Navigator.pop(context),
+        ),
+        centerTitle: true,
+        title: Text(
+          isExpense ? 'Expense' : 'Income',
+          style: const TextStyle(
+            color: AppColors.text,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Image.asset('img/logo.png', height: 32),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppPadding.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Transaction Type Selection
-            Text(
-              'Tipe Transaksi',
-              style: AppTextStyles.subtitle,
+      body: Column(
+        children: [
+          // Toggle Expense/Income
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _transactionType = 'expense';
+                          _updateFilteredCategories();
+                        });
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isExpense ? AppColors.expense : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Expense',
+                            style: TextStyle(
+                              color: isExpense ? Colors.white : AppColors.textSecondary,
+                              fontWeight: isExpense ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _transactionType = 'income';
+                          _updateFilteredCategories();
+                        });
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: !isExpense ? AppColors.primary : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Income',
+                            style: TextStyle(
+                              color: !isExpense ? Colors.white : AppColors.textSecondary,
+                              fontWeight: !isExpense ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppPadding.md),
-            Row(
+          ),
+
+          // Form Fields
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date Field
+                  _buildFormField(
+                    label: 'Tanggal',
+                    child: GestureDetector(
+                      onTap: _selectDate,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            DateFormatter.formatDateWithDay(_selectedDate),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: AppColors.text,
+                            ),
+                          ),
+                          const Icon(Icons.calendar_today, size: 20, color: AppColors.textSecondary),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Amount Field
+                  _buildFormField(
+                    label: 'Total',
+                    child: Text(
+                      'Rp ${CurrencyFormatter.formatNumber(double.tryParse(_displayAmount) ?? 0)}',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: isExpense ? AppColors.expense : AppColors.primary,
+                      ),
+                    ),
+                  ),
+
+                  // Category Field
+                  _buildFormField(
+                    label: 'Kategori',
+                    child: _filteredCategories.isNotEmpty
+                        ? DropdownButtonHideUnderline(
+                            child: DropdownButton<Category>(
+                              value: _selectedCategory,
+                              isExpanded: true,
+                              icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
+                              items: _filteredCategories.map((category) {
+                                return DropdownMenuItem<Category>(
+                                  value: category,
+                                  child: Text(
+                                    category.name,
+                                    style: const TextStyle(fontSize: 16, color: AppColors.text),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (category) {
+                                if (category != null) {
+                                  setState(() => _selectedCategory = category);
+                                }
+                              },
+                            ),
+                          )
+                        : const Text('Loading...', style: TextStyle(color: AppColors.textSecondary)),
+                  ),
+
+                  // Description Field
+                  _buildFormField(
+                    label: 'Catatan',
+                    child: TextField(
+                      controller: _descriptionController,
+                      decoration: const InputDecoration(
+                        hintText: 'Tulis catatan...',
+                        hintStyle: TextStyle(color: AppColors.textTertiary),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      style: const TextStyle(fontSize: 16, color: AppColors.text),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Numeric Keypad
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: AppColors.surface,
+            child: Column(
               children: [
-                Expanded(
-                  child: _buildTypeButton('Pengeluaran', 'expense'),
+                Row(
+                  children: [
+                    _buildKeypadButton('1'),
+                    _buildKeypadButton('2'),
+                    _buildKeypadButton('3'),
+                  ],
                 ),
-                const SizedBox(width: AppPadding.md),
-                Expanded(
-                  child: _buildTypeButton('Pemasukan', 'income'),
+                Row(
+                  children: [
+                    _buildKeypadButton('4'),
+                    _buildKeypadButton('5'),
+                    _buildKeypadButton('6'),
+                  ],
+                ),
+                Row(
+                  children: [
+                    _buildKeypadButton('7'),
+                    _buildKeypadButton('8'),
+                    _buildKeypadButton('9'),
+                  ],
+                ),
+                Row(
+                  children: [
+                    _buildKeypadButton('000'),
+                    _buildKeypadButton('0'),
+                    _buildKeypadButton('backspace', icon: Icons.backspace_outlined),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _saveTransaction,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      widget.transaction == null ? 'Simpan' : 'Update',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: AppPadding.lg),
-
-            // Amount Input
-            Text(
-              'Jumlah (Rp)',
-              style: AppTextStyles.subtitle,
-            ),
-            const SizedBox(height: AppPadding.sm),
-            TextField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: '0',
-                prefixText: 'Rp ',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppPadding.md,
-                  vertical: AppPadding.md,
-                ),
-              ),
-              style: AppTextStyles.body,
-            ),
-            const SizedBox(height: AppPadding.lg),
-
-            // Category Selection
-            Text(
-              'Kategori',
-              style: AppTextStyles.subtitle,
-            ),
-            const SizedBox(height: AppPadding.sm),
-            if (_filteredCategories.isNotEmpty)
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                ),
-                child: DropdownButton<Category>(
-                  value: _selectedCategory,
-                  isExpanded: true,
-                  underline: const SizedBox.shrink(),
-                  items: _filteredCategories.map((category) {
-                    return DropdownMenuItem<Category>(
-                      value: category,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppPadding.md,
-                          vertical: AppPadding.sm,
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              categoryIcons[category.name] ?? '📌',
-                              style: const TextStyle(fontSize: 20),
-                            ),
-                            const SizedBox(width: AppPadding.md),
-                            Text(category.name),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (category) {
-                    if (category != null) {
-                      setState(() {
-                        _selectedCategory = category;
-                      });
-                    }
-                  },
-                ),
-              ),
-            const SizedBox(height: AppPadding.lg),
-
-            // Date Selection
-            Text(
-              'Tanggal',
-              style: AppTextStyles.subtitle,
-            ),
-            const SizedBox(height: AppPadding.sm),
-            GestureDetector(
-              onTap: _selectDate,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppPadding.md,
-                  vertical: AppPadding.md,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      DateFormatter.formatDateWithDay(_selectedDate),
-                      style: AppTextStyles.body,
-                    ),
-                    const Icon(Icons.calendar_today),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppPadding.lg),
-
-            // Description Input
-            Text(
-              'Keterangan (Opsional)',
-              style: AppTextStyles.subtitle,
-            ),
-            const SizedBox(height: AppPadding.sm),
-            TextField(
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Tulis keterangan transaksi...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppPadding.md,
-                  vertical: AppPadding.md,
-                ),
-              ),
-              style: AppTextStyles.body,
-            ),
-            const SizedBox(height: AppPadding.lg),
-
-            // Save Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saveTransaction,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppPadding.md,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppBorderRadius.md),
-                  ),
-                ),
-                child: Text(
-                  widget.transaction == null ? 'Tambah' : 'Update',
-                  style: AppTextStyles.subtitle.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTypeButton(String label, String value) {
-    final isSelected = _transactionType == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _transactionType = value;
-          _updateFilteredCategories();
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppPadding.md,
-          vertical: AppPadding.md,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (value == 'expense' ? AppColors.expense : AppColors.income)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppBorderRadius.md),
-          border: Border.all(
-            color: isSelected
-                ? (value == 'expense' ? AppColors.expense : AppColors.income)
-                : AppColors.border,
-          ),
-        ),
-        child: Center(
-          child: Text(
+  Widget _buildFormField({required String label, required Widget child}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
             label,
-            style: AppTextStyles.subtitle.copyWith(
-              color: isSelected ? Colors.white : AppColors.text,
-              fontWeight: FontWeight.bold,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
             ),
+          ),
+          const SizedBox(height: 8),
+          child,
+          const Divider(height: 1, color: AppColors.border),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKeypadButton(String value, {IconData? icon}) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _onKeyPressed(value),
+        child: Container(
+          height: 56,
+          margin: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: icon != null
+                ? Icon(icon, color: AppColors.text, size: 24)
+                : Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.text,
+                    ),
+                  ),
           ),
         ),
       ),

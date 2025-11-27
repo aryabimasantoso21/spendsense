@@ -9,10 +9,7 @@ import '../../utils/formatters.dart';
 class StatisticsPage extends StatefulWidget {
   final LocalStorageService localStorage;
 
-  const StatisticsPage({
-    super.key,
-    required this.localStorage,
-  });
+  const StatisticsPage({super.key, required this.localStorage});
 
   @override
   State<StatisticsPage> createState() => _StatisticsPageState();
@@ -22,7 +19,18 @@ class _StatisticsPageState extends State<StatisticsPage> {
   List<Transaction> _transactions = [];
   List<Category> _categories = [];
   String _selectedType = 'expense';
-  DateTime? _selectedMonth;
+  String _selectedPeriod = 'Monthly';
+
+  final List<Color> _categoryColors = [
+    const Color(0xFFF5A572), // Orange/Coral
+    const Color(0xFFE57373), // Red
+    const Color(0xFFB3E5FC), // Light Blue
+    const Color(0xFF64B5F6), // Blue
+    const Color(0xFF81C784), // Green
+    const Color(0xFFBA68C8), // Purple
+    const Color(0xFFFFD54F), // Yellow
+    const Color(0xFF4DB6AC), // Teal
+  ];
 
   @override
   void initState() {
@@ -33,355 +41,263 @@ class _StatisticsPageState extends State<StatisticsPage> {
   Future<void> _loadData() async {
     _transactions = await widget.localStorage.getTransactions();
     _categories = await widget.localStorage.getCategories();
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
-  List<Transaction> _getFilteredTransactions() {
-    var filtered = _transactions
-        .where((t) => t.type == _selectedType)
-        .toList();
-
-    if (_selectedMonth != null) {
-      filtered = filtered
-          .where((t) =>
-              t.date.year == _selectedMonth!.year &&
-              t.date.month == _selectedMonth!.month)
-          .toList();
-    } else {
-      // Default to current month
-      final now = DateTime.now();
-      filtered = filtered
-          .where((t) =>
-              t.date.year == now.year &&
-              t.date.month == now.month)
-          .toList();
-    }
-
-    return filtered;
+  List<Transaction> get _filteredTransactions {
+    return _transactions.where((t) => t.type == _selectedType).toList();
   }
 
-  Map<String, double> _getCategoryTotals() {
-    final filtered = _getFilteredTransactions();
+  Map<String, double> get _categoryTotals {
     final totals = <String, double>{};
-
-    for (var transaction in filtered) {
-      final category = _categories
-          .firstWhere((c) => c.id == transaction.categoryId, orElse: () => const Category(id: 0, type: '', name: 'Other'));
+    for (var transaction in _filteredTransactions) {
+      final category = _categories.firstWhere(
+        (c) => c.id == transaction.categoryId,
+        orElse: () => const Category(id: 0, type: '', name: 'Lainnya'),
+      );
       totals[category.name] = (totals[category.name] ?? 0) + transaction.amount;
     }
-
     return totals;
   }
 
-  double _getTotalAmount() {
-    return _getFilteredTransactions().fold(0, (sum, t) => sum + t.amount);
-  }
+  double get _totalAmount => _filteredTransactions.fold(0, (sum, t) => sum + t.amount);
 
   @override
   Widget build(BuildContext context) {
-    final categoryTotals = _getCategoryTotals();
-    final totalAmount = _getTotalAmount();
-    final filteredTransactions = _getFilteredTransactions();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Statistik'),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.background,
         elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'Statistics',
+          style: TextStyle(
+            color: AppColors.text,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Image.asset('img/logo.png', height: 32),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppPadding.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Type Selection
-            Row(
+      body: Column(
+        children: [
+          // Toggle Expense/Income
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedType = 'expense'),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _selectedType == 'expense' 
+                              ? AppColors.expense 
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Expense',
+                            style: TextStyle(
+                              color: _selectedType == 'expense' 
+                                  ? Colors.white 
+                                  : AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedType = 'income'),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _selectedType == 'income' 
+                              ? AppColors.primary 
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Income',
+                            style: TextStyle(
+                              color: _selectedType == 'income' 
+                                  ? Colors.white 
+                                  : AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Period Dropdown
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButton<String>(
+                value: _selectedPeriod,
+                isExpanded: true,
+                underline: const SizedBox(),
+                icon: const Icon(Icons.keyboard_arrow_down),
+                items: ['Daily', 'Weekly', 'Monthly', 'Yearly']
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (value) => setState(() => _selectedPeriod = value!),
+              ),
+            ),
+          ),
+
+          // Donut Chart with center text
+          SizedBox(
+            height: 220,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                Expanded(
-                  child: _buildTypeButton('Pengeluaran', 'expense'),
+                PieChart(
+                  PieChartData(
+                    sections: _buildPieChartSections(),
+                    sectionsSpace: 3,
+                    centerSpaceRadius: 60,
+                    startDegreeOffset: -90,
+                  ),
                 ),
-                const SizedBox(width: AppPadding.md),
-                Expanded(
-                  child: _buildTypeButton('Pemasukan', 'income'),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Total ${_selectedType == 'expense' ? 'Expense' : 'Income'}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      CurrencyFormatter.formatCurrency(_totalAmount),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.text,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: AppPadding.lg),
+          ),
 
-            // Month Selector
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (int i = 0; i < 6; i++) ...[
-                    _buildMonthButton(
-                      DateTime(DateTime.now().year,
-                          DateTime.now().month - i),
+          // Category List
+          Expanded(
+            child: _categoryTotals.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Tidak ada data',
+                      style: TextStyle(color: AppColors.textSecondary),
                     ),
-                    if (i < 5) const SizedBox(width: AppPadding.sm),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: AppPadding.lg),
-
-            // Total Amount
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppPadding.md),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _selectedType == 'expense' ? 'Total Pengeluaran' : 'Total Pemasukan',
-                    style: AppTextStyles.body.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: _categoryTotals.length,
+                    itemBuilder: (context, index) {
+                      final entry = _categoryTotals.entries.elementAt(index);
+                      final color = _categoryColors[index % _categoryColors.length];
+                      return _buildCategoryItem(entry.key, entry.value, color);
+                    },
                   ),
-                  const SizedBox(height: AppPadding.sm),
-                  Text(
-                    CurrencyFormatter.formatCurrency(totalAmount),
-                    style: AppTextStyles.heading2.copyWith(
-                      color: _selectedType == 'expense'
-                          ? AppColors.expense
-                          : AppColors.income,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppPadding.lg),
-
-            // Pie Chart
-            if (categoryTotals.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppPadding.md),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Breakdown per Kategori',
-                      style: AppTextStyles.subtitle,
-                    ),
-                    const SizedBox(height: AppPadding.md),
-                    SizedBox(
-                      height: 250,
-                      child: PieChart(
-                        PieChartData(
-                          sections: _buildPieChartSections(
-                              categoryTotals, totalAmount),
-                          centerSpaceRadius: 0,
-                          sectionsSpace: 2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppPadding.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Center(
-                  child: Text(
-                    'Belum ada data untuk bulan ini',
-                    style: AppTextStyles.body.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: AppPadding.lg),
-
-            // Category Breakdown
-            if (categoryTotals.isNotEmpty) ...[
-              Text(
-                'Detail Kategori',
-                style: AppTextStyles.subtitle,
-              ),
-              const SizedBox(height: AppPadding.md),
-              ...categoryTotals.entries.map((entry) {
-                final percentage = (entry.value / totalAmount * 100);
-                return Container(
-                  margin: const EdgeInsets.only(bottom: AppPadding.md),
-                  padding: const EdgeInsets.all(AppPadding.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                categoryIcons[entry.key] ?? '📌',
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                              const SizedBox(width: AppPadding.md),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    entry.key,
-                                    style: AppTextStyles.subtitle,
-                                  ),
-                                  Text(
-                                    '${percentage.toStringAsFixed(1)}%',
-                                    style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Text(
-                            CurrencyFormatter.formatCurrency(entry.value),
-                            style: AppTextStyles.subtitle.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppPadding.sm),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.xs),
-                        child: LinearProgressIndicator(
-                          value: entry.value / totalAmount,
-                          minHeight: 6,
-                          backgroundColor: AppColors.border,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            _selectedType == 'expense'
-                                ? AppColors.expense
-                                : AppColors.income,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ],
-          ],
-        ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
-  List<PieChartSectionData> _buildPieChartSections(
-      Map<String, double> totals, double totalAmount) {
-    final colors = [
-      const Color(0xFFFF6B6B),
-      const Color(0xFF4ECDC4),
-      const Color(0xFF45B7D1),
-      const Color(0xFFFFA07A),
-      const Color(0xFF98D8C8),
-      const Color(0xFFF7DC6F),
-    ];
-
-    return totals.entries.toList().asMap().entries.map((entry) {
-      final index = entry.key;
-      final data = entry.value;
-      final value = data.value;
-      final percentage = (value / totalAmount * 100);
-
-      return PieChartSectionData(
-        value: value,
-        title: '${percentage.toStringAsFixed(0)}%',
-        color: colors[index % colors.length],
-        radius: 60,
-        titleStyle: AppTextStyles.caption.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
+  List<PieChartSectionData> _buildPieChartSections() {
+    if (_categoryTotals.isEmpty) {
+      return [
+        PieChartSectionData(
+          value: 1,
+          color: AppColors.border,
+          radius: 25,
+          showTitle: false,
         ),
+      ];
+    }
+
+    int colorIndex = 0;
+    return _categoryTotals.entries.map((entry) {
+      final color = _categoryColors[colorIndex % _categoryColors.length];
+      colorIndex++;
+      return PieChartSectionData(
+        value: entry.value,
+        color: color,
+        radius: 25,
+        showTitle: false,
       );
     }).toList();
   }
 
-  Widget _buildTypeButton(String label, String value) {
-    final isSelected = _selectedType == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedType = value;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppPadding.md,
-          vertical: AppPadding.md,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppBorderRadius.md),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: AppTextStyles.subtitle.copyWith(
-              color: isSelected ? Colors.white : AppColors.text,
+  Widget _buildCategoryItem(String name, double amount, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMonthButton(DateTime date) {
-    final isSelected = _selectedMonth != null &&
-        _selectedMonth!.year == date.year &&
-        _selectedMonth!.month == date.month;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedMonth = isSelected ? null : date;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppPadding.md,
-          vertical: AppPadding.sm,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.background,
-          borderRadius: BorderRadius.circular(AppBorderRadius.sm),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(
+                fontSize: 16,
+                color: AppColors.text,
+              ),
+            ),
           ),
-        ),
-        child: Text(
-          DateFormatter.formatMonth(date),
-          style: AppTextStyles.body.copyWith(
-            color: isSelected ? Colors.white : AppColors.text,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          Text(
+            CurrencyFormatter.formatCurrency(amount),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: _selectedType == 'expense' ? AppColors.expense : AppColors.primary,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

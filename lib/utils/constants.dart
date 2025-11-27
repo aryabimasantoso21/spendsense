@@ -1,61 +1,110 @@
 import 'package:flutter/material.dart';
 
-// Color Constants
+// Color Constants - Figma Design
 class AppColors {
-  static const Color primary = Color(0xFF0BCCF8);
-  static const Color primaryDark = Color(0xFF0095A8);
-  static const Color accent = Color(0xFFFFA500);
-  static const Color expense = Color(0xFFFF6B6B);
-  static const Color income = Color(0xFF51CF66);
-  static const Color background = Color(0xFFF5F5F5);
+  // Primary Colors - Teal/Cyan from Figma
+  static const Color primary = Color(0xFF2AC3BE);
+  static const Color primaryDark = Color(0xFF1A9E9A);
+  static const Color primaryLight = Color(0xFF7DD8D5);
+  
+  // Accent Colors
+  static const Color accent = Color(0xFFE8F8F7);
+  static const Color accentDark = Color(0xFF48CAE4);
+  
+  // Secondary Colors  
+  static const Color secondary = Color(0xFF6C757D);
+  static const Color secondaryLight = Color(0xFFADB5BD);
+  
+  // Semantic Colors - from Figma
+  static const Color expense = Color(0xFFF5A572);  // Coral/Orange from Figma
+  static const Color income = Color(0xFF2AC3BE);   // Teal same as primary
+  static const Color warning = Color(0xFFFFC43D);
+  static const Color success = Color(0xFF2AC3BE);
+  
+  // Card Colors from Figma
+  static const Color cardBlue = Color(0xFF4B7BE5);
+  static const Color cardPurple = Color(0xFF9B6DD5);
+  static const Color cardOrange = Color(0xFFF5A572);
+  static const Color cardYellow = Color(0xFFF5C842);
+  
+  // Neutral Colors
+  static const Color background = Color(0xFFFFFFFF);
   static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceVariant = Color(0xFFF5F5F5);
+  static const Color border = Color(0xFFE0E0E0);
+  
+  // Text Colors
   static const Color text = Color(0xFF333333);
-  static const Color textSecondary = Color(0xFF999999);
-  static const Color border = Color(0xFFEEEEEE);
+  static const Color textSecondary = Color(0xFF666666);
+  static const Color textTertiary = Color(0xFF999999);
+  
+  // Card Gradient Colors - from Figma
+  static const Color cardGradientStart = Color(0xFF2AC3BE);
+  static const Color cardGradientEnd = Color(0xFF7DD8D5);
+  
+  // Category dot colors from Figma Statistics
+  static const Color dotPink = Color(0xFFF5A572);
+  static const Color dotRed = Color(0xFFE57373);
+  static const Color dotLightBlue = Color(0xFFB3E5FC);
+  static const Color dotBlue = Color(0xFF64B5F6);
+  static const Color dotGreen = Color(0xFF81C784);
+  static const Color dotPurple = Color(0xFFBA68C8);
 }
 
-// Text Style Constants
+// Text Style Constants - Modern Typography
 class AppTextStyles {
   static const TextStyle heading1 = TextStyle(
-    fontSize: 28,
-    fontWeight: FontWeight.bold,
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
     color: AppColors.text,
+    letterSpacing: -0.5,
   );
 
   static const TextStyle heading2 = TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.bold,
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
     color: AppColors.text,
+    letterSpacing: -0.5,
   );
 
   static const TextStyle heading3 = TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.bold,
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
     color: AppColors.text,
+    letterSpacing: -0.3,
   );
 
   static const TextStyle subtitle = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
     color: AppColors.text,
   );
 
   static const TextStyle body = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.normal,
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
     color: AppColors.text,
+    height: 1.5,
   );
 
   static const TextStyle bodySecondary = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.normal,
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
+    height: 1.5,
   );
 
   static const TextStyle caption = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.normal,
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
+  );
+  
+  static const TextStyle overline = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textTertiary,
+    letterSpacing: 1.2,
   );
 }
 
@@ -66,15 +115,26 @@ class AppPadding {
   static const double md = 16.0;
   static const double lg = 24.0;
   static const double xl = 32.0;
+  static const double xxl = 48.0;
 }
 
-// Border Radius Constants
+// Border Radius Constants - More pronounced for modern look
 class AppBorderRadius {
-  static const double xs = 4.0;
-  static const double sm = 8.0;
-  static const double md = 12.0;
-  static const double lg = 16.0;
-  static const double xl = 24.0;
+  static const double xs = 6.0;
+  static const double sm = 12.0;
+  static const double md = 16.0;
+  static const double lg = 20.0;
+  static const double xl = 28.0;
+  static const double xxl = 36.0;
+}
+
+// Elevation/Shadow Constants
+class AppElevation {
+  static const double none = 0.0;
+  static const double sm = 2.0;
+  static const double md = 4.0;
+  static const double lg = 8.0;
+  static const double xl = 16.0;
 }
 
 // String Constants
@@ -107,6 +167,15 @@ const Map<String, String> accountTypeIcons = {
   'cash': '💵',
   'savings': '🏧',
   'other': '💼',
+};
+
+// Account Type Names (Indonesian)
+const Map<String, String> accountTypeNames = {
+  'bank': 'Bank',
+  'ewallet': 'E-Wallet',
+  'cash': 'Tunai',
+  'savings': 'Tabungan',
+  'other': 'Lainnya',
 };
 
 // Category Icons

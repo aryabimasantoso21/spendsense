@@ -50,7 +50,7 @@ class Transaction {
     );
   }
 
-  // Convert Transaction to JSON (for LocalStorage - uses categoryId)
+  // Convert Transaction to JSON (for Supabase)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -64,19 +64,19 @@ class Transaction {
     };
   }
 
-  // Create Transaction from JSON (supports both LocalStorage and Supabase formats)
+  // Create Transaction from JSON (supports Supabase format)
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
       id: json['id'] as int,
-      accountId: json['account_id'] as int? ?? json['accountId'] as int? ?? 0,
-      categoryId: json['category_id'] as int? ?? json['categoryId'] as int? ?? 0,
+      accountId: json['account_id'] as int,
+      categoryId: json['category_id'] as int? ?? 0,
       type: json['type'] as String,
       amount: (json['amount'] as num).toDouble(),
       date: json['date'] is String ? DateTime.parse(json['date'] as String) : json['date'] as DateTime,
       description: (json['description'] as String?) ?? '',
       createdAt: json['created_at'] is String ? DateTime.parse(json['created_at'] as String) : json['created_at'] as DateTime,
-      categoryName: json['category_name'] as String?,
-      accountName: json['account_name'] as String?,
+      categoryName: json['categoryName'] as String?,
+      accountName: json['accountName'] as String?,
     );
   }
 }

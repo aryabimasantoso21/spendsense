@@ -33,7 +33,7 @@ class Account {
   // Convert Account to JSON
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'account_id': id,
       'name': name,
       'type': type,
       'balance': balance,
@@ -44,11 +44,13 @@ class Account {
   // Create Account from JSON
   factory Account.fromJson(Map<String, dynamic> json) {
     return Account(
-      id: json['id'] ?? json['account_id'], // Support both 'id' and 'account_id'
-      name: json['name'],
-      type: json['type'] ?? 'cash',
-      balance: (json['balance'] as num).toDouble(),
-      createdAt: DateTime.parse(json['created_at']),
+      id: json['account_id'] as int,
+      name: json['name'] as String,
+      type: json['type'] as String? ?? 'cash',
+      balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+      createdAt: json['created_at'] is String 
+          ? DateTime.parse(json['created_at'] as String)
+          : json['created_at'] as DateTime? ?? DateTime.now(),
     );
   }
 }

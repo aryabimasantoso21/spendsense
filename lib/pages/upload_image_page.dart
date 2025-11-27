@@ -25,7 +25,6 @@ class _UploadImagePageState extends State<UploadImagePage> {
     _fetchUploadedImages();
   }
 
-  // Pick image from gallery
   Future<void> _pickImage() async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -43,17 +42,16 @@ class _UploadImagePageState extends State<UploadImagePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error memilih gambar: $e')),
+          SnackBar(content: Text('Error picking image: $e')),
         );
       }
     }
   }
 
-  // Upload image to Supabase Storage
   Future<void> _uploadImage() async {
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih gambar terlebih dahulu')),
+        const SnackBar(content: Text('Please select an image first.')),
       );
       return;
     }
@@ -66,19 +64,11 @@ class _UploadImagePageState extends State<UploadImagePage> {
       final bytes = await _selectedImage!.readAsBytes();
       final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-      // Upload to Supabase Storage
-      await supabase.storage
-          .from('notes-images')
-          .uploadBinary(fileName, bytes);
-
-      // Get public URL
-      final imageUrl = supabase.storage
-          .from('notes-images')
-          .getPublicUrl(fileName);
+      await supabase.storage.from('notes-images').uploadBinary(fileName, bytes);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gambar berhasil diupload!')),
+          const SnackBar(content: Text('Image uploaded successfully!')),
         );
       }
 
@@ -95,27 +85,22 @@ class _UploadImagePageState extends State<UploadImagePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error upload: $e')),
+          SnackBar(content: Text('Upload error: $e')),
         );
       }
     }
   }
 
-  // Fetch uploaded images from storage
   Future<void> _fetchUploadedImages() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final List<FileObject> files = await supabase.storage
-          .from('notes-images')
-          .list();
+      final List<FileObject> files = await supabase.storage.from('notes-images').list();
 
       final images = files.map((file) {
-        final url = supabase.storage
-            .from('notes-images')
-            .getPublicUrl(file.name);
+        final url = supabase.storage.from('notes-images').getPublicUrl(file.name);
         
         return {
           'name': file.name,
@@ -141,14 +126,13 @@ class _UploadImagePageState extends State<UploadImagePage> {
     }
   }
 
-  // Delete image from storage
   Future<void> _deleteImage(String fileName) async {
     try {
       await supabase.storage.from('notes-images').remove([fileName]);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gambar berhasil dihapus')),
+          const SnackBar(content: Text('Image deleted successfully!')),
         );
       }
 
@@ -156,7 +140,7 @@ class _UploadImagePageState extends State<UploadImagePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting: $e')),
+          SnackBar(content: Text('Deletion error: $e')),
         );
       }
     }
@@ -166,151 +150,134 @@ class _UploadImagePageState extends State<UploadImagePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Gambar'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Image Manager'),
       ),
-      body: Column(
-        children: [
-          // Image preview and upload section
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                if (_selectedImage != null)
-                  Container(
-                    height: 200,
+      body: RefreshIndicator(
+        onRefresh: _fetchUploadedImages,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _selectedImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            _selectedImage!,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            height: 200,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade400, width: 2),
+                            ),
+                            child: const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_a_photo_outlined, size: 50, color: Colors.grey),
+                                  SizedBox(height: 8),
+                                  Text('Tap to select an image', style: TextStyle(color: Colors.grey)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                  const SizedBox(height: 16),
+                  SizedBox(
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        _selectedImage!,
-                        fit: BoxFit.cover,
+                    child: FilledButton.icon(
+                      onPressed: _isUploading || _selectedImage == null ? null : _uploadImage,
+                      icon: _isUploading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.cloud_upload_outlined),
+                      label: Text(_isUploading ? 'Uploading...' : 'Upload Image'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  Container(
-                    height: 200,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Text('Tidak ada gambar dipilih'),
                     ),
                   ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _isUploading ? null : _pickImage,
-                        icon: const Icon(Icons.photo_library),
-                        label: const Text('Pilih Gambar'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _isUploading ? null : _uploadImage,
-                        icon: _isUploading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.upload),
-                        label: Text(_isUploading ? 'Uploading...' : 'Upload'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Divider(),
-          // List of uploaded images
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Gambar Terupload',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: _fetchUploadedImages,
-                ),
-              ],
+            const Divider(thickness: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Uploaded Images',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _fetchUploadedImages,
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _uploadedImages.isEmpty
-                    ? const Center(child: Text('Belum ada gambar'))
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                        ),
-                        itemCount: _uploadedImages.length,
-                        itemBuilder: (context, index) {
-                          final image = _uploadedImages[index];
-                          return Stack(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    image['url'],
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                    loadingBuilder: (context, child, progress) {
-                                      if (progress == null) return child;
-                                      return const Center(
-                                        child: CircularProgressIndicator(),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, trace) {
-                                      return const Center(
-                                        child: Icon(Icons.error),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _uploadedImages.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No images uploaded yet.',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                          ),
+                          itemCount: _uploadedImages.length,
+                          itemBuilder: (context, index) {
+                            final image = _uploadedImages[index];
+                            return GridTile(
+                              footer: GridTileBar(
+                                backgroundColor: Colors.black45,
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.white),
                                   onPressed: () => _deleteImage(image['name']),
                                 ),
                               ),
-                            ],
-                          );
-                        },
-                      ),
-          ),
-        ],
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  image['url'],
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, progress) =>
+                                      progress == null ? child : const Center(child: CircularProgressIndicator()),
+                                  errorBuilder: (context, error, trace) =>
+                                      const Center(child: Icon(Icons.error, color: Colors.red)),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
     );
   }

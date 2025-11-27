@@ -1,33 +1,71 @@
 import 'package:flutter/material.dart';
 import '../../data/services/local_storage_service.dart';
+import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
+import '../../utils/formatters.dart';
 
 class SettingsPage extends StatefulWidget {
   final LocalStorageService localStorage;
 
-  const SettingsPage({
-    super.key,
-    required this.localStorage,
-  });
+  const SettingsPage({super.key, required this.localStorage});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String _language = 'id';
-  String _dateFormat = 'dd/MM/yyyy';
-  String _currency = 'IDR';
-  String _theme = 'light';
+  bool _darkMode = false;
+  double _totalIncome = 0;
+  double _totalExpense = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _loadData();
   }
 
-Future<void> _loadSettings() async {
-    await widget.localStorage.init();
+  Future<void> _loadData() async {
+    final transactions = await widget.localStorage.getTransactions();
+    _totalIncome = transactions
+        .where((t) => t.type == 'income')
+        .fold(0.0, (sum, t) => sum + t.amount);
+    _totalExpense = transactions
+        .where((t) => t.type == 'expense')
+        .fold(0.0, (sum, t) => sum + t.amount);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _logout() async {
+    await SupabaseService.instance.signOut();
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
+  }
+
+  void _showClearDataDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Semua Data'),
+        content: const Text('Tindakan ini akan menghapus semua transaksi dan akun secara permanen. Lanjutkan?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.expense),
+            onPressed: () async {
+              await widget.localStorage.clearAllData();
+              Navigator.pop(context);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Semua data lokal telah dihapus.')),
+                );
+              }
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -35,292 +73,207 @@ Future<void> _loadSettings() async {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Pengaturan'),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: AppColors.text,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Image.asset('img/logo.png', height: 32),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppPadding.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Logo
-            SizedBox(
-              height: 80,
-              child: Image.asset(
-                'img/logo.png',
-                fit: BoxFit.contain,
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        children: [
+          const SizedBox(height: 16),
+          // Income/Outcome Summary Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primary, AppColors.primaryLight],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
               ),
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: AppPadding.lg),
-
-            // General Settings Section
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Pengaturan Umum',
-                style: AppTextStyles.heading3,
-              ),
-            ),
-            const SizedBox(height: AppPadding.md),
-
-            // Language Setting
-            _buildSettingItem(
-              title: 'Bahasa',
-              subtitle: 'Pilih bahasa aplikasi',
-              value: _language == 'id' ? 'Indonesia' : 'English',
-              onTap: () async {
-                final selected = await showDialog<String>(
-                  context: context,
-                  builder: (context) => SimpleDialog(
-                    title: const Text('Pilih Bahasa'),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SimpleDialogOption(
-                        onPressed: () {
-                          Navigator.pop(context, 'id');
-                        },
-                        child: const Text('Indonesia'),
-                      ),
-                      SimpleDialogOption(
-                        onPressed: () {
-                          Navigator.pop(context, 'en');
-                        },
-                        child: const Text('English'),
-                      ),
-                    ],
-                  ),
-                );
-                if (selected != null) {
-                  setState(() {
-                    _language = selected;
-                  });
-                }
-              },
-            ),
-            const Divider(height: AppPadding.md),
-
-            // Date Format Setting
-            _buildSettingItem(
-              title: 'Format Tanggal',
-              subtitle: 'Pilih format tampilan tanggal',
-              value: _dateFormat,
-              onTap: () async {
-                final formats = ['dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd'];
-                final selected = await showDialog<String>(
-                  context: context,
-                  builder: (context) => SimpleDialog(
-                    title: const Text('Pilih Format Tanggal'),
-                    children: formats
-                        .map((format) => SimpleDialogOption(
-                              onPressed: () {
-                                Navigator.pop(context, format);
-                              },
-                              child: Text(format),
-                            ))
-                        .toList(),
-                  ),
-                );
-                if (selected != null) {
-                  setState(() {
-                    _dateFormat = selected;
-                  });
-                }
-              },
-            ),
-            const Divider(height: AppPadding.md),
-
-            // Currency Setting
-            _buildSettingItem(
-              title: 'Mata Uang',
-              subtitle: 'Pilih mata uang untuk transaksi',
-              value: _currency,
-              onTap: () async {
-                final currencies = ['IDR', 'USD', 'EUR'];
-                final selected = await showDialog<String>(
-                  context: context,
-                  builder: (context) => SimpleDialog(
-                    title: const Text('Pilih Mata Uang'),
-                    children: currencies
-                        .map((currency) => SimpleDialogOption(
-                              onPressed: () {
-                                Navigator.pop(context, currency);
-                              },
-                              child: Text(currency),
-                            ))
-                        .toList(),
-                  ),
-                );
-                if (selected != null) {
-                  setState(() {
-                    _currency = selected;
-                  });
-                }
-              },
-            ),
-            const Divider(height: AppPadding.md),
-
-            // Theme Setting
-            _buildSettingItem(
-              title: 'Tema',
-              subtitle: 'Pilih tema aplikasi',
-              value: _theme == 'light' ? 'Terang' : 'Gelap',
-              onTap: () async {
-                final selected = await showDialog<String>(
-                  context: context,
-                  builder: (context) => SimpleDialog(
-                    title: const Text('Pilih Tema'),
-                    children: [
-                      SimpleDialogOption(
-                        onPressed: () {
-                          Navigator.pop(context, 'light');
-                        },
-                        child: const Text('Terang'),
-                      ),
-                      SimpleDialogOption(
-                        onPressed: () {
-                          Navigator.pop(context, 'dark');
-                        },
-                        child: const Text('Gelap'),
-                      ),
-                    ],
-                  ),
-                );
-                if (selected != null) {
-                  setState(() {
-                    _theme = selected;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: AppPadding.lg),
-
-            // About Section
-            Text(
-              'Tentang',
-              style: AppTextStyles.heading3,
-            ),
-            const SizedBox(height: AppPadding.md),
-            _buildSettingItem(
-              title: 'Versi Aplikasi',
-              subtitle: 'Versi saat ini',
-              value: '1.0.0',
-              onTap: null,
-            ),
-            const Divider(height: AppPadding.md),
-            _buildSettingItem(
-              title: 'Tentang SpendSense',
-              subtitle: 'Aplikasi pencatat keuangan pribadi',
-              value: '',
-              onTap: () {
-                showAboutDialog(
-                  context: context,
-                  applicationName: 'SpendSense',
-                  applicationVersion: '1.0.0',
-                  applicationLegalese: '© 2024 SpendSense. All rights reserved.',
-                );
-              },
-            ),
-            const SizedBox(height: AppPadding.lg),
-
-            // Clear Data Section
-            Text(
-              'Data',
-              style: AppTextStyles.heading3,
-            ),
-            const SizedBox(height: AppPadding.md),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Hapus Semua Data'),
-                      content: const Text(
-                          'Apakah Anda yakin ingin menghapus semua data? Tindakan ini tidak dapat dibatalkan.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Batal'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () async {
-                            await widget.localStorage.clearAllData();
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Semua data telah dihapus'),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.expense,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_downward,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
-                          child: const Text('Hapus'),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Income',
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        CurrencyFormatter.formatCurrency(_totalIncome),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(width: 1, height: 60, color: Colors.white24),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.arrow_upward,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Outcome',
+                              style: TextStyle(color: Colors.white70, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          CurrencyFormatter.formatCurrency(_totalExpense),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
-                  );
-                },
-                icon: const Icon(Icons.delete),
-                label: const Text('Hapus Semua Data'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.expense,
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 32),
+
+          // Settings List
+          _buildSettingItem(
+            icon: Icons.dark_mode_outlined,
+            title: 'Dark Mode',
+            trailing: Switch(
+              value: _darkMode,
+              onChanged: (value) => setState(() => _darkMode = value),
+              activeColor: AppColors.primary,
+            ),
+          ),
+          _buildSettingItem(
+            icon: Icons.person_add_outlined,
+            title: 'Invite Friends',
+            onTap: () {},
+          ),
+          _buildSettingItem(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'My Wallet',
+            onTap: () {},
+          ),
+          _buildSettingItem(
+            icon: Icons.info_outline,
+            title: 'About us',
+            onTap: () => showAboutDialog(
+              context: context,
+              applicationName: AppStrings.appName,
+              applicationVersion: '1.0.0',
+              applicationLegalese: '© 2024 SpendSense',
+              children: [const Text('Aplikasi manajer keuangan pribadi yang dibuat dengan Flutter.')],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          _buildSettingItem(
+            icon: Icons.delete_outline,
+            title: 'Hapus Data Lokal',
+            iconColor: AppColors.expense,
+            textColor: AppColors.expense,
+            onTap: _showClearDataDialog,
+          ),
+          _buildSettingItem(
+            icon: Icons.logout,
+            title: 'Logout',
+            iconColor: AppColors.expense,
+            textColor: AppColors.expense,
+            onTap: _logout,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSettingItem({
+    required IconData icon,
     required String title,
-    required String subtitle,
-    required String value,
+    Widget? trailing,
     VoidCallback? onTap,
+    Color? iconColor,
+    Color? textColor,
   }) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppPadding.md,
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Icon(icon, color: iconColor ?? AppColors.textSecondary, size: 24),
+            const SizedBox(width: 16),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.subtitle,
-                  ),
-                  const SizedBox(height: AppPadding.xs),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (value.isNotEmpty) ...[
-              const SizedBox(width: AppPadding.md),
-              Text(
-                value,
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: textColor ?? AppColors.text,
                 ),
               ),
-            ],
-            if (onTap != null) ...[
-              const SizedBox(width: AppPadding.sm),
-              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-            ],
+            ),
+            if (trailing != null) trailing,
+            if (trailing == null && onTap != null)
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.textTertiary,
+              ),
           ],
         ),
       ),

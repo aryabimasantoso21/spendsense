@@ -11,7 +11,8 @@ class LocalStorageService {
   static const String _settingsKey = 'settings';
 
   static LocalStorageService? _instance;
-  late SharedPreferences _prefs;
+  SharedPreferences? _prefs;
+  bool _initialized = false;
 
   LocalStorageService._();
 
@@ -21,28 +22,41 @@ class LocalStorageService {
   }
 
   Future<void> init() async {
-    _prefs = await SharedPreferences.getInstance();
+    if (!_initialized) {
+      _prefs = await SharedPreferences.getInstance();
+      _initialized = true;
+    }
+  }
+
+  Future<SharedPreferences> get _preferences async {
+    if (_prefs == null) {
+      await init();
+    }
+    return _prefs!;
   }
 
   // Transaction Methods
   Future<void> saveTransaction(Transaction transaction) async {
+    final prefs = await _preferences;
     final transactions = await getTransactions();
     transactions.add(transaction);
-    await _prefs.setString(
+    await prefs.setString(
       _transactionsKey,
       jsonEncode(transactions.map((t) => t.toJson()).toList()),
     );
   }
 
   Future<void> saveTransactions(List<Transaction> transactions) async {
-    await _prefs.setString(
+    final prefs = await _preferences;
+    await prefs.setString(
       _transactionsKey,
       jsonEncode(transactions.map((t) => t.toJson()).toList()),
     );
   }
 
   Future<List<Transaction>> getTransactions() async {
-    final String? jsonString = _prefs.getString(_transactionsKey);
+    final prefs = await _preferences;
+    final String? jsonString = prefs.getString(_transactionsKey);
     if (jsonString == null) {
       return [];
     }
@@ -67,23 +81,26 @@ class LocalStorageService {
 
   // Account Methods
   Future<void> saveAccount(Account account) async {
+    final prefs = await _preferences;
     final accounts = await getAccounts();
     accounts.add(account);
-    await _prefs.setString(
+    await prefs.setString(
       _accountsKey,
       jsonEncode(accounts.map((a) => a.toJson()).toList()),
     );
   }
 
   Future<void> saveAccounts(List<Account> accounts) async {
-    await _prefs.setString(
+    final prefs = await _preferences;
+    await prefs.setString(
       _accountsKey,
       jsonEncode(accounts.map((a) => a.toJson()).toList()),
     );
   }
 
   Future<List<Account>> getAccounts() async {
-    final String? jsonString = _prefs.getString(_accountsKey);
+    final prefs = await _preferences;
+    final String? jsonString = prefs.getString(_accountsKey);
     if (jsonString == null) {
       return [];
     }
@@ -108,14 +125,16 @@ class LocalStorageService {
 
   // Category Methods
   Future<void> saveCategories(List<Category> categories) async {
-    await _prefs.setString(
+    final prefs = await _preferences;
+    await prefs.setString(
       _categoriesKey,
       jsonEncode(categories.map((c) => c.toJson()).toList()),
     );
   }
 
   Future<List<Category>> getCategories() async {
-    final String? jsonString = _prefs.getString(_categoriesKey);
+    final prefs = await _preferences;
+    final String? jsonString = prefs.getString(_categoriesKey);
     if (jsonString == null) {
       return [];
     }
@@ -125,13 +144,15 @@ class LocalStorageService {
 
   // Settings Methods
   Future<void> saveSetting(String key, dynamic value) async {
+    final prefs = await _preferences;
     final settings = await getSettings();
     settings[key] = value;
-    await _prefs.setString(_settingsKey, jsonEncode(settings));
+    await prefs.setString(_settingsKey, jsonEncode(settings));
   }
 
   Future<Map<String, dynamic>> getSettings() async {
-    final String? jsonString = _prefs.getString(_settingsKey);
+    final prefs = await _preferences;
+    final String? jsonString = prefs.getString(_settingsKey);
     if (jsonString == null) {
       return {};
     }
@@ -139,9 +160,10 @@ class LocalStorageService {
   }
 
   Future<void> clearAllData() async {
-    await _prefs.remove(_transactionsKey);
-    await _prefs.remove(_accountsKey);
-    await _prefs.remove(_categoriesKey);
-    await _prefs.remove(_settingsKey);
+    final prefs = await _preferences;
+    await prefs.remove(_transactionsKey);
+    await prefs.remove(_accountsKey);
+    await prefs.remove(_categoriesKey);
+    await prefs.remove(_settingsKey);
   }
 }
