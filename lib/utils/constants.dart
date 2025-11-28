@@ -192,4 +192,5 @@ const Map<String, String> categoryIcons = {
   'Freelance': '💻',
   'Investasi': '📈',
   'Lainnya': '📌',
+  'Adjustment': '⚖️',
 };

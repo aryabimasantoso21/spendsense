@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../data/models/account_model.dart';
 import '../../data/services/supabase_service.dart';
+import '../../data/services/local_storage_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
-import 'add_account_page.dart';
+import 'edit_account_balance_page.dart';
 
 class AccountsPage extends StatefulWidget {
   final List<Account> accounts;
   final VoidCallback onDataChanged;
+  final LocalStorageService localStorage;
 
   const AccountsPage({
     super.key,
     required this.accounts,
     required this.onDataChanged,
+    required this.localStorage,
   });
 
   @override
@@ -47,6 +50,7 @@ class _AccountsPageState extends State<AccountsPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
@@ -89,37 +93,13 @@ class _AccountsPageState extends State<AccountsPage> {
           const SizedBox(height: 24),
 
           // Select an Account Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Select an Account',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.text,
-                ),
-              ),
-              GestureDetector(
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AddAccountPage()),
-                  );
-                  if (result == true) {
-                    widget.onDataChanged();
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.add, size: 20, color: AppColors.text),
-                ),
-              ),
-            ],
+          const Text(
+            'Select an Account',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.text,
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -173,18 +153,33 @@ class _AccountsPageState extends State<AccountsPage> {
         padding: const EdgeInsets.only(right: 24),
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      child: GestureDetector(
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EditAccountBalancePage(
+                account: account,
+                localStorage: widget.localStorage,
+              ),
+            ),
+          );
+          if (result == true) {
+            widget.onDataChanged();
+          }
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: colors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
           ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -256,6 +251,7 @@ class _AccountsPageState extends State<AccountsPage> {
               ],
             ),
           ],
+        ),
         ),
       ),
     );
