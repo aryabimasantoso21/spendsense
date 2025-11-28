@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../data/models/account_model.dart';
-import '../../data/services/local_storage_service.dart';
+import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 import 'add_account_page.dart';
 
 class AccountsPage extends StatefulWidget {
-  final LocalStorageService localStorage;
+  final List<Account> accounts;
   final VoidCallback onDataChanged;
 
   const AccountsPage({
     super.key,
-    required this.localStorage,
+    required this.accounts,
     required this.onDataChanged,
   });
 
@@ -20,29 +20,25 @@ class AccountsPage extends StatefulWidget {
 }
 
 class _AccountsPageState extends State<AccountsPage> {
-  List<Account> _accounts = [];
+  final SupabaseService _supabaseService = SupabaseService.instance;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    _accounts = await widget.localStorage.getAccounts();
-    if (mounted) setState(() {});
-  }
-
-  double get _totalBalance => _accounts.fold(0, (sum, account) => sum + account.balance);
+  double get _totalBalance => widget.accounts.fold(0, (sum, account) => sum + account.balance);
 
   Future<void> _deleteAccount(int id) async {
-    await widget.localStorage.deleteAccount(id);
-    await _loadData();
-    widget.onDataChanged();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Akun berhasil dihapus'), duration: Duration(seconds: 2)),
-      );
+    try {
+      await _supabaseService.deleteAccount(id);
+      widget.onDataChanged();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Akun berhasil dihapus'), duration: Duration(seconds: 2)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menghapus akun: $e')),
+        );
+      }
     }
   }
 
@@ -111,7 +107,6 @@ class _AccountsPageState extends State<AccountsPage> {
                     MaterialPageRoute(builder: (_) => const AddAccountPage()),
                   );
                   if (result == true) {
-                    _loadData();
                     widget.onDataChanged();
                   }
                 },
@@ -129,7 +124,7 @@ class _AccountsPageState extends State<AccountsPage> {
           const SizedBox(height: 16),
 
           // Account Cards
-          if (_accounts.isEmpty)
+          if (widget.accounts.isEmpty)
             Container(
               padding: const EdgeInsets.all(40),
               child: const Column(
@@ -144,7 +139,7 @@ class _AccountsPageState extends State<AccountsPage> {
               ),
             )
           else
-            ..._accounts.asMap().entries.map((entry) {
+            ...widget.accounts.asMap().entries.map((entry) {
               final index = entry.key;
               final account = entry.value;
               return _buildAccountCard(account, index);

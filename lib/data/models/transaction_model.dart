@@ -61,7 +61,7 @@ class Transaction {
   // Convert Transaction to JSON (for Supabase)
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'transaction_id': id,
       'account_id': accountId,
       'destination_account_id': destinationAccountId,
       'category_id': categoryId,
@@ -76,7 +76,7 @@ class Transaction {
   // Create Transaction from JSON (supports Supabase format)
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
-      id: json['id'] as int,
+      id: (json['transaction_id'] ?? json['id']) as int,
       accountId: json['account_id'] as int,
       destinationAccountId: json['destination_account_id'] as int?,
       categoryId: json['category_id'] as int? ?? 0,

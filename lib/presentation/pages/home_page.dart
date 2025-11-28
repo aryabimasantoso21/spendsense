@@ -26,6 +26,7 @@ class _HomePageState extends State<HomePage> {
   List<Transaction> _transactions = [];
   List<Account> _accounts = [];
   List<Category> _categories = [];
+  String _username = 'SpendSense';
   int _currentIndex = 0;
 
   @override
@@ -44,6 +45,7 @@ class _HomePageState extends State<HomePage> {
       _transactions = await _supabase.getTransactions();
       _accounts = await _supabase.getAccounts();
       _categories = await _supabase.getCategories();
+      _username = await _supabase.getUsername();
 
       await _localStorage.saveCategories(_categories);
 
@@ -61,8 +63,9 @@ class _HomePageState extends State<HomePage> {
       if (_accounts.isEmpty) {
         final defaultAccount = Account(
           id: 1,
+          userId: '',
           name: 'Tunai',
-          type: 'cash',
+          type: 'Cash',
           balance: 0,
           createdAt: DateTime.now(),
         );
@@ -101,7 +104,7 @@ class _HomePageState extends State<HomePage> {
       .where((t) => t.type == 'expense')
       .fold(0.0, (sum, t) => sum + t.amount);
 
-  double get _netBalance => _totalIncome - _totalExpense;
+  double get _totalAccountBalance => _accounts.fold(0.0, (sum, account) => sum + account.balance);
 
   List<Transaction> get _recentTransactions {
     final sorted = List<Transaction>.from(_transactions)
@@ -119,7 +122,7 @@ class _HomePageState extends State<HomePage> {
           _buildDashboard(),
           TransactionsPage(localStorage: _localStorage, onDataChanged: _loadData),
           StatisticsPage(localStorage: _localStorage, onDataChanged: _loadData),
-          AccountsPage(localStorage: _localStorage, onDataChanged: _loadData),
+          AccountsPage(accounts: _accounts, onDataChanged: _loadData),
           SettingsPage(localStorage: _localStorage),
         ],
       ),
@@ -193,20 +196,20 @@ class _HomePageState extends State<HomePage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Column(
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Good Morning 👋',
                               style: TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'SpendSense',
-                              style: TextStyle(
+                              _username,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -245,11 +248,11 @@ class _HomePageState extends State<HomePage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          CurrencyFormatter.formatCurrency(_netBalance),
+                          CurrencyFormatter.formatCurrency(_totalAccountBalance),
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
-                            color: _netBalance >= 0 ? AppColors.text : AppColors.expense,
+                            color: _totalAccountBalance >= 0 ? AppColors.text : AppColors.expense,
                           ),
                         ),
                         const SizedBox(height: 20),
