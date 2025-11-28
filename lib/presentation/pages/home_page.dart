@@ -8,6 +8,8 @@ import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 
 import 'add_transaction_page.dart';
+import 'add_account_page.dart';
+import 'edit_account_balance_page.dart';
 import 'transactions_page.dart';
 import 'accounts_page.dart';
 import 'statistics_page.dart';
@@ -56,7 +58,11 @@ class _HomePageState extends State<HomePage> {
       _categories = await _localStorage.getCategories();
 
       if (_categories.isEmpty) {
-        _categories = [...defaultExpenseCategories, ...defaultIncomeCategories];
+        _categories = [
+          ...defaultExpenseCategories,
+          ...defaultIncomeCategories,
+          ...defaultExpenseAdjustmentCategory,
+        ];
         await _localStorage.saveCategories(_categories);
       }
 
@@ -83,16 +89,30 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Navigate to add transaction page - used by central FAB
-  Future<void> _navigateToAddTransaction() async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddTransactionPage(localStorage: _localStorage),
-      ),
-    );
-    if (result == true) {
-      await _loadData();
+  // Navigate to add transaction or account page - used by central FAB
+  Future<void> _onFabPressed() async {
+    if (_currentIndex == 3) {
+      // On Accounts tab, add new account
+      final result = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AddAccountPage(),
+        ),
+      );
+      if (result == true) {
+        await _loadData();
+      }
+    } else {
+      // On other tabs, add new transaction
+      final result = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddTransactionPage(localStorage: _localStorage),
+        ),
+      );
+      if (result == true) {
+        await _loadData();
+      }
     }
   }
 
@@ -112,6 +132,19 @@ class _HomePageState extends State<HomePage> {
     return sorted.take(5).toList();
   }
 
+  String get _getGreeting {
+    final hour = DateTime.now().hour;
+    if (hour > 5 && hour < 12) {
+      return 'Good Morning 🌅';
+    } else if (hour >= 12 && hour < 17) {
+      return 'Good Afternoon ☀️';
+    } else if (hour >= 17 && hour < 21) {
+      return 'Good Evening 🌆';
+    } else {
+      return 'Good Night 🌙';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,13 +155,13 @@ class _HomePageState extends State<HomePage> {
           _buildDashboard(),
           TransactionsPage(localStorage: _localStorage, onDataChanged: _loadData),
           StatisticsPage(localStorage: _localStorage, onDataChanged: _loadData),
-          AccountsPage(accounts: _accounts, onDataChanged: _loadData),
+          AccountsPage(accounts: _accounts, onDataChanged: _loadData, localStorage: _localStorage),
           SettingsPage(localStorage: _localStorage),
         ],
       ),
       floatingActionButton: _currentIndex != 4 // Show FAB on all tabs except Profile/Settings
           ? FloatingActionButton(
-              onPressed: _navigateToAddTransaction,
+              onPressed: _onFabPressed,
               backgroundColor: AppColors.primary,
               child: const Icon(Icons.add, color: Colors.white),
             )
@@ -199,9 +232,9 @@ class _HomePageState extends State<HomePage> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Good Morning 👋',
-                              style: TextStyle(
+                            Text(
+                              _getGreeting,
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
                               ),
@@ -394,40 +427,56 @@ class _HomePageState extends State<HomePage> {
     ];
     final colors = gradients[index % gradients.length];
 
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EditAccountBalancePage(
+              account: account,
+              localStorage: _localStorage,
+            ),
+          ),
+        );
+        if (result == true) {
+          await _loadData();
+        }
+      },
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: colors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
         ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            account.name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              account.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            CurrencyFormatter.formatCurrency(account.balance),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            Text(
+              CurrencyFormatter.formatCurrency(account.balance),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
