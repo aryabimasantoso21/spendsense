@@ -70,9 +70,8 @@ class _AccountsPageState extends State<AccountsPage> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 60),
         children: [
-          const SizedBox(height: 16),
           // Available Balance Section
           const Text(
             'Available Balance',

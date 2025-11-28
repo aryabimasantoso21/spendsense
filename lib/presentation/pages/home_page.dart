@@ -61,7 +61,6 @@ class _HomePageState extends State<HomePage> {
         _categories = [
           ...defaultExpenseCategories,
           ...defaultIncomeCategories,
-          ...defaultExpenseAdjustmentCategory,
         ];
         await _localStorage.saveCategories(_categories);
       }
