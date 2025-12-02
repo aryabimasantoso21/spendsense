@@ -203,9 +203,7 @@ class _EditAccountBalancePageState extends State<EditAccountBalancePage> {
           Navigator.pop(context, true);
         }
       } else {        
-        // Gunakan kategori "Lainnya" yang sudah ada
-        // ID 13 untuk income (Lainnya), ID 8 untuk expense (Lainnya)
-        final categoryId = difference > 0 ? 13 : 8;
+        final categoryId = difference > 0 ? 14 : 15;
         final categoryType = difference > 0 ? 'income' : 'expense';
         
         final transaction = Transaction(

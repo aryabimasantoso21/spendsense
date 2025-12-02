@@ -365,7 +365,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                                   value: _selectedAccount,
                                   isExpanded: true,
                                   icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textSecondary),
-                                  items: _accounts.map((account) {
+                                  items: _accounts
+                                      .where((a) => _transactionType != 'transfer' || a.id != _destinationAccount?.id)
+                                      .map((account) {
                                     return DropdownMenuItem<Account>(
                                       value: account,
                                       child: Row(
