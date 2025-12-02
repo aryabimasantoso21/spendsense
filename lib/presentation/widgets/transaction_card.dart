@@ -35,6 +35,8 @@ class TransactionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isExpense = transaction.type == 'expense';
+    final isIncome = transaction.type == 'income';
+    final isTransfer = transaction.type == 'transfer';
     final categoryName = _getCategoryName();
     final categoryIcon = _getCategoryIcon();
 
@@ -44,10 +46,13 @@ class TransactionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppBorderRadius.lg),
-        border: Border.all(
-          color: AppColors.border,
-          width: 1,
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -56,40 +61,102 @@ class TransactionCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: (isExpense ? AppColors.expense : AppColors.income)
-                  .withOpacity(0.1),
+              color: isTransfer 
+                  ? AppColors.cardBlue.withOpacity(0.1)
+                  : (isExpense ? AppColors.expense : AppColors.income).withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppBorderRadius.sm),
             ),
             child: Center(
-              child: Text(
-                categoryIcon,
-                style: const TextStyle(fontSize: 24),
-              ),
+              child: isTransfer
+                  ? const Icon(Icons.swap_horiz, color: AppColors.cardBlue, size: 28)
+                  : Text(
+                      categoryIcon,
+                      style: const TextStyle(fontSize: 24),
+                    ),
             ),
           ),
           const SizedBox(width: AppPadding.md),
-          // Category and Date
+          // Category and Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  categoryName,
-                  style: AppTextStyles.subtitle,
+                  isTransfer 
+                      ? 'Transfer'
+                      : categoryName,
+                  style: AppTextStyles.subtitle.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: AppPadding.xs),
                 Text(
                   DateFormatter.formatDate(transaction.date),
-                  style: AppTextStyles.caption,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
+                if (isTransfer) ...[
+                  const SizedBox(height: AppPadding.xs),
+                  Row(
+                    children: [
+                      Text(
+                        transaction.accountName ?? '',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.expense,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(
+                          Icons.arrow_forward,
+                          size: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        transaction.destinationAccountName ?? '',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.income,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  const SizedBox(height: AppPadding.xs),
+                  Text(
+                    transaction.accountName ?? '',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+                if (transaction.description?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: AppPadding.xs),
+                  Text(
+                    transaction.description!,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textTertiary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
           ),
           // Amount
           Text(
-            '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCurrency(transaction.amount)}',
+            isTransfer
+                ? CurrencyFormatter.formatCurrency(transaction.amount)
+                : '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCurrency(transaction.amount)}',
             style: AppTextStyles.subtitle.copyWith(
-              color: isExpense ? AppColors.expense : AppColors.income,
+              color: isTransfer 
+                  ? AppColors.cardBlue
+                  : (isExpense ? AppColors.expense : AppColors.income),
               fontWeight: FontWeight.bold,
             ),
           ),

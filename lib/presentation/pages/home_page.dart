@@ -543,6 +543,8 @@ class _HomePageState extends State<HomePage> {
       orElse: () => Category(id: 0, name: 'Other', type: transaction.type),
     );
     final isExpense = transaction.type == 'expense';
+    final isIncome = transaction.type == 'income';
+    final isTransfer = transaction.type == 'transfer';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -563,12 +565,18 @@ class _HomePageState extends State<HomePage> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: (isExpense ? AppColors.expense : AppColors.primary).withValues(alpha: 0.1),
+              color: isTransfer
+                  ? AppColors.cardBlue.withValues(alpha: 0.1)
+                  : (isExpense ? AppColors.expense : AppColors.primary).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              isExpense ? Icons.arrow_upward : Icons.arrow_downward,
-              color: isExpense ? AppColors.expense : AppColors.primary,
+              isTransfer
+                  ? Icons.swap_horiz
+                  : (isExpense ? Icons.arrow_upward : Icons.arrow_downward),
+              color: isTransfer
+                  ? AppColors.cardBlue
+                  : (isExpense ? AppColors.expense : AppColors.primary),
               size: 20,
             ),
           ),
@@ -578,7 +586,7 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  category.name,
+                  isTransfer ? 'Transfer' : category.name,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -597,11 +605,15 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Text(
-            '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCurrency(transaction.amount)}',
+            isTransfer
+                ? CurrencyFormatter.formatCurrency(transaction.amount)
+                : '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCurrency(transaction.amount)}',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: isExpense ? AppColors.expense : AppColors.primary,
+              color: isTransfer
+                  ? AppColors.cardBlue
+                  : (isExpense ? AppColors.expense : AppColors.primary),
             ),
           ),
         ],
