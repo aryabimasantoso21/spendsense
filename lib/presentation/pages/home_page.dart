@@ -546,77 +546,91 @@ class _HomePageState extends State<HomePage> {
     final isIncome = transaction.type == 'income';
     final isTransfer = transaction.type == 'transfer';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: isTransfer
-                  ? AppColors.cardBlue.withValues(alpha: 0.1)
-                  : (isExpense ? AppColors.expense : AppColors.primary).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddTransactionPage(
+              localStorage: _localStorage,
+              transaction: transaction,
             ),
-            child: Icon(
+          ),
+        );
+        _loadData();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isTransfer
+                    ? AppColors.cardBlue.withValues(alpha: 0.1)
+                    : (isExpense ? AppColors.expense : AppColors.primary).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isTransfer
+                    ? Icons.swap_horiz
+                    : (isExpense ? Icons.arrow_upward : Icons.arrow_downward),
+                color: isTransfer
+                    ? AppColors.cardBlue
+                    : (isExpense ? AppColors.expense : AppColors.primary),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isTransfer ? 'Transfer' : category.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormatter.formatDate(transaction.date),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
               isTransfer
-                  ? Icons.swap_horiz
-                  : (isExpense ? Icons.arrow_upward : Icons.arrow_downward),
-              color: isTransfer
-                  ? AppColors.cardBlue
-                  : (isExpense ? AppColors.expense : AppColors.primary),
-              size: 20,
+                  ? CurrencyFormatter.formatCurrency(transaction.amount)
+                  : '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCurrency(transaction.amount)}',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: isTransfer
+                    ? AppColors.cardBlue
+                    : (isExpense ? AppColors.expense : AppColors.primary),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isTransfer ? 'Transfer' : category.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  DateFormatter.formatDate(transaction.date),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            isTransfer
-                ? CurrencyFormatter.formatCurrency(transaction.amount)
-                : '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCurrency(transaction.amount)}',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: isTransfer
-                  ? AppColors.cardBlue
-                  : (isExpense ? AppColors.expense : AppColors.primary),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

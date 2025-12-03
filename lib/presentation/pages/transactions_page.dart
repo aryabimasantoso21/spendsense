@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/models/category_model.dart';
+import '../../data/models/account_model.dart';
 import '../../data/services/local_storage_service.dart';
 import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
+import 'add_transaction_page.dart';
 
 class TransactionsPage extends StatefulWidget {
   final LocalStorageService localStorage;
@@ -25,6 +27,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   
   List<Transaction> _transactions = [];
   List<Category> _categories = [];
+  List<Account> _accounts = [];
   String _selectedPeriod = 'Month';
   bool _isLoading = false;
 
@@ -40,10 +43,50 @@ class _TransactionsPageState extends State<TransactionsPage> {
       // Try Supabase first
       _transactions = await _supabase.getTransactions();
       _categories = await _supabase.getCategories();
+      _accounts = await _supabase.getAccounts();
+      
+      // Fill in account names from accounts list
+      _transactions = _transactions.map((t) {
+        final account = _accounts.firstWhere(
+          (a) => a.id == t.accountId,
+          orElse: () => Account(id: 0, userId: '', name: 'Unknown', type: '', balance: 0, createdAt: DateTime.now()),
+        );
+        final destAccount = t.destinationAccountId != null
+            ? _accounts.firstWhere(
+                (a) => a.id == t.destinationAccountId,
+                orElse: () => Account(id: 0, userId: '', name: 'Unknown', type: '', balance: 0, createdAt: DateTime.now()),
+              )
+            : null;
+        
+        return t.copyWith(
+          accountName: account.name,
+          destinationAccountName: destAccount?.name,
+        );
+      }).toList();
     } catch (e) {
       // Fallback to local storage
       _transactions = await widget.localStorage.getTransactions();
       _categories = await widget.localStorage.getCategories();
+      _accounts = await widget.localStorage.getAccounts();
+      
+      // Fill in account names from accounts list
+      _transactions = _transactions.map((t) {
+        final account = _accounts.firstWhere(
+          (a) => a.id == t.accountId,
+          orElse: () => Account(id: 0, userId: '', name: 'Unknown', type: '', balance: 0, createdAt: DateTime.now()),
+        );
+        final destAccount = t.destinationAccountId != null
+            ? _accounts.firstWhere(
+                (a) => a.id == t.destinationAccountId,
+                orElse: () => Account(id: 0, userId: '', name: 'Unknown', type: '', balance: 0, createdAt: DateTime.now()),
+              )
+            : null;
+        
+        return t.copyWith(
+          accountName: account.name,
+          destinationAccountName: destAccount?.name,
+        );
+      }).toList();
     }
     if (mounted) {
       setState(() => _isLoading = false);
@@ -381,42 +424,117 @@ class _TransactionsPageState extends State<TransactionsPage> {
   Widget _buildTransactionItem(Transaction transaction) {
     final category = _categories.firstWhere(
       (cat) => cat.id == transaction.categoryId,
-      orElse: () => Category(id: 0, name: 'Lainnya', type: transaction.type),
+      orElse: () => Category(id: 0, name: 'Other', type: transaction.type),
     );
     final isExpense = transaction.type == 'expense';
+    final isIncome = transaction.type == 'income';
+    final isTransfer = transaction.type == 'transfer';
 
     return Dismissible(
       key: Key(transaction.id.toString()),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => _deleteTransaction(transaction.id),
       background: Container(
+        margin: const EdgeInsets.only(left: 32, bottom: 12),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: AppColors.expense,
+        decoration: BoxDecoration(
+          color: AppColors.expense,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(left: 32, bottom: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                category.name,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.text,
+        padding: const EdgeInsets.only(left: 32),
+        child: GestureDetector(
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddTransactionPage(
+                  localStorage: widget.localStorage,
+                  transaction: transaction,
                 ),
               ),
+            );
+            _loadData();
+            widget.onDataChanged();
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            Text(
-              CurrencyFormatter.formatCurrency(transaction.amount),
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: isExpense ? AppColors.expense : AppColors.primary,
-              ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isTransfer
+                        ? AppColors.cardBlue.withValues(alpha: 0.1)
+                        : (isExpense ? AppColors.expense : AppColors.primary).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isTransfer
+                        ? Icons.swap_horiz
+                        : (isExpense ? Icons.arrow_upward : Icons.arrow_downward),
+                    color: isTransfer
+                        ? AppColors.cardBlue
+                        : (isExpense ? AppColors.expense : AppColors.primary),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isTransfer ? 'Transfer' : category.name,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.text,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isTransfer
+                            ? '${transaction.accountName} → ${transaction.destinationAccountName}'
+                            : transaction.accountName ?? '',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  isTransfer
+                      ? CurrencyFormatter.formatCurrency(transaction.amount)
+                      : '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCurrency(transaction.amount)}',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: isTransfer
+                        ? AppColors.cardBlue
+                        : (isExpense ? AppColors.expense : AppColors.primary),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
