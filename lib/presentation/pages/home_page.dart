@@ -146,8 +146,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -167,7 +168,7 @@ class _HomePageState extends State<HomePage> {
           : null,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -199,6 +200,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildDashboard() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+
     return RefreshIndicator(
       onRefresh: _loadData,
       color: AppColors.primary,
@@ -207,13 +213,15 @@ class _HomePageState extends State<HomePage> {
         children: [
           // Header Section with gradient
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primaryLight, AppColors.primary],
+                colors: isDarkMode 
+                    ? [const Color(0xFF00796B), const Color(0xFF004D40)]
+                    : [AppColors.primaryLight, AppColors.primary],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
               ),
@@ -259,7 +267,7 @@ class _HomePageState extends State<HomePage> {
                     margin: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -271,10 +279,10 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'Total Balance',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: secondaryTextColor,
                             fontSize: 14,
                           ),
                         ),
@@ -284,7 +292,7 @@ class _HomePageState extends State<HomePage> {
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
-                            color: _totalAccountBalance >= 0 ? AppColors.text : AppColors.expense,
+                            color: _totalAccountBalance >= 0 ? textColor : AppColors.expense,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -299,7 +307,7 @@ class _HomePageState extends State<HomePage> {
                                 amount: _totalIncome,
                               ),
                             ),
-                            Container(width: 1, height: 50, color: AppColors.border),
+                            Container(width: 1, height: 50, color: isDarkMode ? Colors.white24 : AppColors.border),
                             Expanded(
                               child: _buildBalanceItem(
                                 icon: Icons.arrow_upward,
@@ -338,6 +346,10 @@ class _HomePageState extends State<HomePage> {
     required String label,
     required double amount,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+
     return Column(
       children: [
         Row(
@@ -354,8 +366,8 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: secondaryTextColor,
                 fontSize: 13,
               ),
             ),
@@ -364,10 +376,10 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(height: 8),
         Text(
           CurrencyFormatter.formatCurrency(amount),
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 15,
-            color: AppColors.text,
+            color: textColor,
           ),
         ),
       ],
@@ -375,6 +387,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildAccountsSection() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Column(
@@ -383,12 +398,12 @@ class _HomePageState extends State<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'My Accounts',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.text,
+                  color: textColor,
                 ),
               ),
               GestureDetector(
@@ -481,6 +496,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildRecentTransactionsSection() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Column(
@@ -489,12 +508,12 @@ class _HomePageState extends State<HomePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Recent Transactions',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.text,
+                  color: textColor,
                 ),
               ),
               GestureDetector(
@@ -513,14 +532,14 @@ class _HomePageState extends State<HomePage> {
           _transactions.isEmpty
               ? Container(
                   padding: const EdgeInsets.all(32),
-                  child: const Center(
+                  child: Center(
                     child: Column(
                       children: [
-                        Icon(Icons.receipt_long, size: 48, color: AppColors.textTertiary),
-                        SizedBox(height: 12),
+                        const Icon(Icons.receipt_long, size: 48, color: AppColors.textTertiary),
+                        const SizedBox(height: 12),
                         Text(
                           'No transactions yet',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(color: secondaryTextColor),
                         ),
                       ],
                     ),
@@ -538,6 +557,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildModernTransactionCard(Transaction transaction) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+
     final category = _categories.firstWhere(
       (cat) => cat.id == transaction.categoryId,
       orElse: () => Category(id: 0, name: 'Other', type: transaction.type),
@@ -563,7 +587,7 @@ class _HomePageState extends State<HomePage> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -600,18 +624,18 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     isTransfer ? 'Transfer' : category.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.text,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     DateFormatter.formatDate(transaction.date),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: secondaryTextColor,
                     ),
                   ),
                 ],

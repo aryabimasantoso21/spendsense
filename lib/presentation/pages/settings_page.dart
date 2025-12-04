@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/services/local_storage_service.dart';
 import '../../data/services/supabase_service.dart';
+import '../../data/services/theme_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 
@@ -14,7 +15,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _darkMode = false;
   double _totalIncome = 0;
   double _totalExpense = 0;
 
@@ -70,17 +70,21 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Profile',
           style: TextStyle(
-            color: AppColors.text,
+            color: Theme.of(context).appBarTheme.foregroundColor,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -100,8 +104,10 @@ class _SettingsPageState extends State<SettingsPage> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryLight],
+              gradient: LinearGradient(
+                colors: isDarkMode
+                    ? [const Color(0xFF004D40), const Color(0xFF00796B)]
+                    : [AppColors.primary, AppColors.primaryLight],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
@@ -193,28 +199,42 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 32),
 
           // Settings List
-          _buildSettingItem(
-            icon: Icons.dark_mode_outlined,
-            title: 'Dark Mode',
-            trailing: Switch(
-              value: _darkMode,
-              onChanged: (value) => setState(() => _darkMode = value),
-              activeColor: AppColors.primary,
-            ),
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: ThemeService.instance,
+            builder: (context, themeMode, _) {
+              final isDark = themeMode == ThemeMode.dark;
+              return _buildSettingItem(
+                icon: isDark ? Icons.dark_mode : Icons.dark_mode_outlined,
+                title: 'Dark Mode',
+                textColor: textColor,
+                iconColor: secondaryTextColor,
+                trailing: Switch(
+                  value: isDark,
+                  onChanged: (value) => ThemeService.instance.toggleTheme(value),
+                  activeTrackColor: AppColors.primary,
+                ),
+              );
+            },
           ),
           _buildSettingItem(
             icon: Icons.person_add_outlined,
             title: 'Invite Friends',
+            textColor: textColor,
+            iconColor: secondaryTextColor,
             onTap: () {},
           ),
           _buildSettingItem(
             icon: Icons.account_balance_wallet_outlined,
             title: 'My Wallet',
+            textColor: textColor,
+            iconColor: secondaryTextColor,
             onTap: () {},
           ),
           _buildSettingItem(
             icon: Icons.info_outline,
             title: 'About us',
+            textColor: textColor,
+            iconColor: secondaryTextColor,
             onTap: () => showAboutDialog(
               context: context,
               applicationName: AppStrings.appName,

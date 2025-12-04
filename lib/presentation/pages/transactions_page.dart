@@ -324,17 +324,23 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final surfaceColor = isDarkMode ? const Color(0xFF2C2C2C) : AppColors.surfaceVariant;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Transaction',
           style: TextStyle(
-            color: AppColors.text,
+            color: textColor,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -354,7 +360,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
+                color: surfaceColor,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -365,7 +371,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       onTap: () => setState(() => _selectedPeriod = period),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.white : Colors.transparent,
+                          color: isSelected ? cardColor : Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: isSelected
                               ? [
@@ -383,7 +389,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                              color: isSelected ? AppColors.text : AppColors.textSecondary,
+                              color: isSelected ? textColor : secondaryTextColor,
                             ),
                           ),
                         ),
@@ -404,7 +410,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
                   onPressed: () => _navigateDate(-1),
-                  color: AppColors.text,
+                  color: textColor,
                 ),
                 Expanded(
                   child: GestureDetector(
@@ -417,14 +423,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         children: [
                           Text(
                             _dateRangeText,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.text,
+                              color: textColor,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.arrow_drop_down, color: AppColors.text),
+                          Icon(Icons.arrow_drop_down, color: textColor),
                         ],
                       ),
                     ),
@@ -433,7 +439,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
                   onPressed: () => _navigateDate(1),
-                  color: AppColors.text,
+                  color: textColor,
                 ),
               ],
             ),
@@ -444,8 +450,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
             margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryLight],
+              gradient: LinearGradient(
+                colors: isDarkMode
+                    ? [const Color(0xFF004D40), const Color(0xFF00796B)]
+                    : [AppColors.primary, AppColors.primaryLight],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
@@ -569,6 +577,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Widget _buildDateGroup(DateTime date, List<Transaction> transactions) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final surfaceColor = isDarkMode ? const Color(0xFF2C2C2C) : AppColors.surfaceVariant;
+
     final dayIncome = transactions
         .where((t) => t.type == 'income')
         .fold(0.0, (sum, t) => sum + t.amount);
@@ -587,24 +600,24 @@ class _TransactionsPageState extends State<TransactionsPage> {
             children: [
               Text(
                 date.day.toString().padLeft(2, '0'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.text,
+                  color: textColor,
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
+                  color: surfaceColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   dayName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    color: secondaryTextColor,
                   ),
                 ),
               ),
@@ -638,6 +651,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Widget _buildTransactionItem(Transaction transaction) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+
     final category = _categories.firstWhere(
       (cat) => cat.id == transaction.categoryId,
       orElse: () => Category(id: 0, name: 'Other', type: transaction.type),
@@ -680,7 +698,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cardColor,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -717,10 +735,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     children: [
                       Text(
                         isTransfer ? 'Transfer' : category.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.text,
+                          color: textColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -728,9 +746,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         isTransfer
                             ? '${transaction.accountName} → ${transaction.destinationAccountName}'
                             : transaction.accountName ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: secondaryTextColor,
                         ),
                       ),
                     ],

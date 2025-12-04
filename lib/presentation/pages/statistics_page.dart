@@ -107,17 +107,23 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final surfaceColor = isDarkMode ? const Color(0xFF2C2C2C) : AppColors.surfaceVariant;
+    final borderColor = isDarkMode ? Colors.white24 : AppColors.border;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Statistics',
           style: TextStyle(
-            color: AppColors.text,
+            color: textColor,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -140,7 +146,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
               child: Container(
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
+                  color: surfaceColor,
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: Row(
@@ -161,7 +167,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               style: TextStyle(
                                 color: _selectedType == 'expense' 
                                     ? Colors.white 
-                                    : AppColors.textSecondary,
+                                    : secondaryTextColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -185,7 +191,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               style: TextStyle(
                                 color: _selectedType == 'income' 
                                     ? Colors.white 
-                                    : AppColors.textSecondary,
+                                    : secondaryTextColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -204,7 +210,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: borderColor),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: DropdownButton<String>(
@@ -239,18 +245,18 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     children: [
                       Text(
                         'Total ${_selectedType == 'expense' ? 'Expense' : 'Income'}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: secondaryTextColor,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         CurrencyFormatter.formatCurrency(_totalAmount),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.text,
+                          color: textColor,
                         ),
                       ),
                     ],
@@ -261,12 +267,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
             // Category List
             if (_categoryTotals.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32),
+              Padding(
+                padding: const EdgeInsets.all(32),
                 child: Center(
                   child: Text(
                     'Tidak ada data',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: secondaryTextColor),
                   ),
                 ),
               )
@@ -314,6 +320,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   Widget _buildCategoryItem(String name, double amount, Color color) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -330,9 +339,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
           Expanded(
             child: Text(
               name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: AppColors.text,
+                color: textColor,
               ),
             ),
           ),
