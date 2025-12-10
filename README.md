@@ -1,4 +1,9 @@
 # SpendSense — Smart Expense Tracker App  
+
+<p align="center">
+  <img src="img/logo_withtext.png" width="600" alt="SpendSense Logo"/>
+</p>
+
 A modern Flutter-based money management application built with **Supabase**, **Flutter**, and **Material Design 3**.  
 SpendSense membantu pengguna mencatat pemasukan, pengeluaran, dan transfer antar akun secara cepat, aman, dan intuitif.
 
