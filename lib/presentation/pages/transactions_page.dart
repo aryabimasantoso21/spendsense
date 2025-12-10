@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/account_model.dart';
@@ -28,7 +29,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
   List<Transaction> _transactions = [];
   List<Category> _categories = [];
   List<Account> _accounts = [];
-  String _selectedPeriod = 'Month';
+  String _selectedPeriod = 'Daily'; // Changed default to Daily to match request context
+  DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
 
   @override
@@ -95,25 +97,195 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   // Get filtered transactions based on selected period
   List<Transaction> get _filteredTransactions {
-    final now = DateTime.now();
-    
     return _transactions.where((t) {
       switch (_selectedPeriod) {
-        case 'Today':
-          return t.date.year == now.year && 
-                 t.date.month == now.month && 
-                 t.date.day == now.day;
-        case 'Week':
-          final weekStart = now.subtract(Duration(days: now.weekday - 1));
-          return t.date.isAfter(weekStart.subtract(const Duration(days: 1)));
-        case 'Month':
-          return t.date.year == now.year && t.date.month == now.month;
-        case 'Year':
-          return t.date.year == now.year;
+        case 'Daily':
+          return t.date.year == _selectedDate.year && 
+                 t.date.month == _selectedDate.month && 
+                 t.date.day == _selectedDate.day;
+        case 'Weekly':
+          final weekStart = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+          final weekEnd = weekStart.add(const Duration(days: 6));
+          // Check if date is within the week range (inclusive)
+          final date = DateTime(t.date.year, t.date.month, t.date.day);
+          final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+          final end = DateTime(weekEnd.year, weekEnd.month, weekEnd.day);
+          return (date.isAtSameMomentAs(start) || date.isAfter(start)) && 
+                 (date.isAtSameMomentAs(end) || date.isBefore(end));
+        case 'Monthly':
+          return t.date.year == _selectedDate.year && t.date.month == _selectedDate.month;
+        case 'Yearly':
+          return t.date.year == _selectedDate.year;
         default:
           return true;
       }
     }).toList();
+  }
+
+  void _navigateDate(int count) {
+    setState(() {
+      switch (_selectedPeriod) {
+        case 'Daily':
+          _selectedDate = _selectedDate.add(Duration(days: count));
+          break;
+        case 'Weekly':
+          _selectedDate = _selectedDate.add(Duration(days: count * 7));
+          break;
+        case 'Monthly':
+          _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + count);
+          break;
+        case 'Yearly':
+          _selectedDate = DateTime(_selectedDate.year + count);
+          break;
+      }
+    });
+  }
+
+  String get _dateRangeText {
+    switch (_selectedPeriod) {
+      case 'Daily':
+        return DateFormat('d MMMM yyyy').format(_selectedDate);
+      case 'Weekly':
+        final start = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+        final end = start.add(const Duration(days: 6));
+        // Format: 30 Nov - 06 Dec 2025
+        return '${DateFormat('d MMM').format(start)} - ${DateFormat('d MMM yyyy').format(end)}';
+      case 'Monthly':
+        return DateFormat('MMMM yyyy').format(_selectedDate);
+      case 'Yearly':
+        return DateFormat('yyyy').format(_selectedDate);
+      default:
+        return '';
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final firstDate = DateTime(2020);
+    final lastDate = DateTime(2030);
+
+    if (_selectedPeriod == 'Daily') {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: _selectedDate,
+        firstDate: firstDate,
+        lastDate: lastDate,
+      );
+      if (picked != null) setState(() => _selectedDate = picked);
+    } else if (_selectedPeriod == 'Weekly') {
+      // For weekly, we pick a date and it selects that week
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: _selectedDate,
+        firstDate: firstDate,
+        lastDate: lastDate,
+        helpText: 'Select any day in the week',
+      );
+      if (picked != null) setState(() => _selectedDate = picked);
+    } else if (_selectedPeriod == 'Monthly') {
+      // Custom Month Picker
+      await showDialog(
+        context: context,
+        builder: (context) {
+          int dialogYear = _selectedDate.year;
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return AlertDialog(
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: () => setStateDialog(() => dialogYear--),
+                    ),
+                    Text(
+                      '$dialogYear',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: () => setStateDialog(() => dialogYear++),
+                    ),
+                  ],
+                ),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      childAspectRatio: 1.5,
+                    ),
+                    itemCount: 12,
+                    itemBuilder: (context, index) {
+                      final monthDate = DateTime(dialogYear, index + 1);
+                      final isSelected = index + 1 == _selectedDate.month && dialogYear == _selectedDate.year;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedDate = DateTime(dialogYear, index + 1);
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          alignment: Alignment.center,
+                          margin: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary : null,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            DateFormat('MMM').format(monthDate),
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } else if (_selectedPeriod == 'Yearly') {
+      // Custom Year Picker (2020-2025)
+      await showDialog(
+        context: context,
+        builder: (context) {
+          return SimpleDialog(
+            title: const Text('Select Year'),
+            children: List.generate(6, (index) {
+              final year = 2025 - index; // 2025 down to 2020
+              return SimpleDialogOption(
+                onPressed: () {
+                  setState(() => _selectedDate = DateTime(year));
+                  Navigator.pop(context);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    year.toString(),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: year == _selectedDate.year ? FontWeight.bold : FontWeight.normal,
+                      color: year == _selectedDate.year ? AppColors.primary : Colors.black,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          );
+        },
+      );
+    }
   }
 
   // Group transactions by date
@@ -152,17 +324,23 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+    final surfaceColor = isDarkMode ? const Color(0xFF2C2C2C) : AppColors.surfaceVariant;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Transaction',
           style: TextStyle(
-            color: AppColors.text,
+            color: textColor,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -182,18 +360,18 @@ class _TransactionsPageState extends State<TransactionsPage> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
+                color: surfaceColor,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
-                children: ['Today', 'Week', 'Month', 'Year'].map((period) {
+                children: ['Daily', 'Weekly', 'Monthly', 'Yearly'].map((period) {
                   final isSelected = _selectedPeriod == period;
                   return Expanded(
                     child: GestureDetector(
                       onTap: () => setState(() => _selectedPeriod = period),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.white : Colors.transparent,
+                          color: isSelected ? cardColor : Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: isSelected
                               ? [
@@ -211,7 +389,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                              color: isSelected ? AppColors.text : AppColors.textSecondary,
+                              color: isSelected ? textColor : secondaryTextColor,
                             ),
                           ),
                         ),
@@ -223,13 +401,59 @@ class _TransactionsPageState extends State<TransactionsPage> {
             ),
           ),
 
+          // Date Navigator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () => _navigateDate(-1),
+                  color: textColor,
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _pickDate,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _dateRangeText,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.arrow_drop_down, color: textColor),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () => _navigateDate(1),
+                  color: textColor,
+                ),
+              ],
+            ),
+          ),
+
           // Summary Card
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryLight],
+              gradient: LinearGradient(
+                colors: isDarkMode
+                    ? [const Color(0xFF004D40), const Color(0xFF00796B)]
+                    : [AppColors.primary, AppColors.primaryLight],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
@@ -353,6 +577,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Widget _buildDateGroup(DateTime date, List<Transaction> transactions) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final surfaceColor = isDarkMode ? const Color(0xFF2C2C2C) : AppColors.surfaceVariant;
+
     final dayIncome = transactions
         .where((t) => t.type == 'income')
         .fold(0.0, (sum, t) => sum + t.amount);
@@ -371,24 +600,24 @@ class _TransactionsPageState extends State<TransactionsPage> {
             children: [
               Text(
                 date.day.toString().padLeft(2, '0'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.text,
+                  color: textColor,
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
+                  color: surfaceColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   dayName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    color: secondaryTextColor,
                   ),
                 ),
               ),
@@ -422,6 +651,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Widget _buildTransactionItem(Transaction transaction) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
+
     final category = _categories.firstWhere(
       (cat) => cat.id == transaction.categoryId,
       orElse: () => Category(id: 0, name: 'Other', type: transaction.type),
@@ -464,7 +698,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cardColor,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -501,10 +735,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     children: [
                       Text(
                         isTransfer ? 'Transfer' : category.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.text,
+                          color: textColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -512,9 +746,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         isTransfer
                             ? '${transaction.accountName} → ${transaction.destinationAccountName}'
                             : transaction.accountName ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: secondaryTextColor,
                         ),
                       ),
                     ],

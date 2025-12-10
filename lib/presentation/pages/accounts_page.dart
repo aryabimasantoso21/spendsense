@@ -47,17 +47,21 @@ class _AccountsPageState extends State<AccountsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Account',
           style: TextStyle(
-            color: AppColors.text,
+            color: textColor,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -73,31 +77,31 @@ class _AccountsPageState extends State<AccountsPage> {
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 60),
         children: [
           // Available Balance Section
-          const Text(
+          Text(
             'Available Balance',
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color: secondaryTextColor,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             CurrencyFormatter.formatCurrency(_totalBalance),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: AppColors.text,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 24),
 
           // Select an Account Header
-          const Text(
+          Text(
             'Select an Account',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppColors.text,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -106,13 +110,13 @@ class _AccountsPageState extends State<AccountsPage> {
           if (widget.accounts.isEmpty)
             Container(
               padding: const EdgeInsets.all(40),
-              child: const Column(
+              child: Column(
                 children: [
-                  Icon(Icons.credit_card_outlined, size: 64, color: AppColors.textTertiary),
-                  SizedBox(height: 16),
+                  const Icon(Icons.credit_card_outlined, size: 64, color: AppColors.textTertiary),
+                  const SizedBox(height: 16),
                   Text(
                     'Belum ada akun',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: secondaryTextColor),
                   ),
                 ],
               ),

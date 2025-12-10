@@ -9,6 +9,7 @@ class LocalStorageService {
   static const String _accountsKey = 'accounts';
   static const String _categoriesKey = 'categories';
   static const String _settingsKey = 'settings';
+  static const String _themeKey = 'theme_mode';
 
   static LocalStorageService? _instance;
   SharedPreferences? _prefs;
@@ -159,11 +160,22 @@ class LocalStorageService {
     return jsonDecode(jsonString);
   }
 
+  Future<void> saveThemeMode(bool isDarkMode) async {
+    final prefs = await _preferences;
+    await prefs.setBool(_themeKey, isDarkMode);
+  }
+
+  Future<bool> getThemeMode() async {
+    final prefs = await _preferences;
+    return prefs.getBool(_themeKey) ?? false;
+  }
+
   Future<void> clearAllData() async {
     final prefs = await _preferences;
     await prefs.remove(_transactionsKey);
     await prefs.remove(_accountsKey);
     await prefs.remove(_categoriesKey);
     await prefs.remove(_settingsKey);
+    await prefs.remove(_themeKey);
   }
 }
