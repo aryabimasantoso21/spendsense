@@ -39,6 +39,57 @@ class _EditAccountBalancePageState extends State<EditAccountBalancePage> {
     super.dispose();
   }
 
+  Future<void> _showDeleteConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Hapus Akun'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus akun "${widget.account.name}"? Tindakan ini tidak dapat dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.expense),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteAccount();
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    setState(() => _isLoading = true);
+    try {
+      await _supabase.deleteAccount(widget.account.id);
+      await widget.localStorage.deleteAccount(widget.account.id);
+      
+      if (mounted) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Akun berhasil dihapus'), duration: Duration(seconds: 2)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menghapus akun: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _showUpdateMethodDialog() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -260,6 +311,12 @@ class _EditAccountBalancePageState extends State<EditAccountBalancePage> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Color.fromARGB(255, 251, 63, 63)),
+            onPressed: _isLoading ? null : _showDeleteConfirmation,
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,

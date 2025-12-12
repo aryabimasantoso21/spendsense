@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../data/models/account_model.dart';
-import '../../data/services/supabase_service.dart';
 import '../../data/services/local_storage_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
@@ -23,27 +22,7 @@ class AccountsPage extends StatefulWidget {
 }
 
 class _AccountsPageState extends State<AccountsPage> {
-  final SupabaseService _supabaseService = SupabaseService.instance;
-
   double get _totalBalance => widget.accounts.fold(0, (sum, account) => sum + account.balance);
-
-  Future<void> _deleteAccount(int id) async {
-    try {
-      await _supabaseService.deleteAccount(id);
-      widget.onDataChanged();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Akun berhasil dihapus'), duration: Duration(seconds: 2)),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menghapus akun: $e')),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,21 +121,7 @@ class _AccountsPageState extends State<AccountsPage> {
     ];
     final colors = gradients[index % gradients.length];
 
-    return Dismissible(
-      key: Key(account.id.toString()),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => _deleteAccount(account.id),
-      background: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: AppColors.expense,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      child: GestureDetector(
+    return GestureDetector(
         onTap: () async {
           final result = await Navigator.push(
             context,
@@ -254,7 +219,6 @@ class _AccountsPageState extends State<AccountsPage> {
               ],
             ),
           ],
-        ),
         ),
       ),
     );
