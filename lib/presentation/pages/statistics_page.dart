@@ -6,6 +6,7 @@ import '../../data/services/local_storage_service.dart';
 import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StatisticsPage extends StatefulWidget {
   final LocalStorageService localStorage;
@@ -23,6 +24,7 @@ class StatisticsPage extends StatefulWidget {
 
 class _StatisticsPageState extends State<StatisticsPage> {
   final SupabaseService _supabase = SupabaseService.instance;
+  RealtimeChannel? _txnChannel;
   
   List<Transaction> _transactions = [];
   List<Category> _categories = [];
@@ -44,6 +46,42 @@ class _StatisticsPageState extends State<StatisticsPage> {
   void initState() {
     super.initState();
     _loadData();
+    _setupRealtime();
+  }
+
+  @override
+  void didUpdateWidget(StatisticsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload data when parent triggers an update
+    _loadData();
+  }
+
+  void _setupRealtime() {
+    try {
+      _txnChannel = _supabase.client.channel('public:transactions');
+      _txnChannel!.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'transactions',
+        callback: (payload) async {
+          await _loadData();
+          if (widget.onDataChanged != null) widget.onDataChanged!();
+        },
+      );
+      _txnChannel!.subscribe();
+    } catch (_) {
+      // ignore realtime setup errors; page still works with pull-to-refresh
+    }
+  }
+
+  @override
+  void dispose() {
+    try {
+      if (_txnChannel != null) {
+        _supabase.client.removeChannel(_txnChannel!);
+      }
+    } catch (_) {}
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -94,11 +132,15 @@ class _StatisticsPageState extends State<StatisticsPage> {
   Map<String, double> get _categoryTotals {
     final totals = <String, double>{};
     for (var transaction in _filteredTransactions) {
-      final category = _categories.firstWhere(
-        (c) => c.id == transaction.categoryId,
-        orElse: () => const Category(id: 0, type: '', name: 'Lainnya'),
-      );
-      totals[category.name] = (totals[category.name] ?? 0) + transaction.amount;
+      // Prefer explicit categoryName if present (Supabase may not store categoryId)
+      final resolvedName = (transaction.categoryName != null && transaction.categoryName!.trim().isNotEmpty)
+          ? transaction.categoryName!.trim()
+          : _categories.firstWhere(
+              (c) => c.id == transaction.categoryId,
+              orElse: () => const Category(id: 0, type: '', name: 'Lainnya'),
+            ).name;
+
+      totals[resolvedName] = (totals[resolvedName] ?? 0) + transaction.amount;
     }
     return totals;
   }
