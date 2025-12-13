@@ -29,7 +29,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   List<Transaction> _transactions = [];
   List<Category> _categories = [];
   List<Account> _accounts = [];
-  String _selectedPeriod = 'Daily'; // Changed default to Daily to match request context
+  String _selectedPeriod = 'Daily';
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
 
@@ -733,14 +733,42 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        isTransfer ? 'Transfer' : category.name,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: textColor,
+                      if (isTransfer)
+                        // Transfer: show Transfer label
+                        Text(
+                          'Transfer',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: textColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      else if (transaction.description.isNotEmpty)
+                        // Expense/Income with description: show description
+                        Text(
+                          transaction.description,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: textColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      else
+                        // Expense/Income without description: show category
+                        Text(
+                          category.name,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: textColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
                       const SizedBox(height: 4),
                       Text(
                         isTransfer
@@ -750,6 +778,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           fontSize: 12,
                           color: secondaryTextColor,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

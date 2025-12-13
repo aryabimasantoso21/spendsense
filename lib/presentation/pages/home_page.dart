@@ -49,6 +49,25 @@ class _HomePageState extends State<HomePage> {
       _categories = await _supabase.getCategories();
       _username = await _supabase.getUsername();
 
+      // Fill in account names from accounts list
+      _transactions = _transactions.map((t) {
+        final account = _accounts.firstWhere(
+          (a) => a.id == t.accountId,
+          orElse: () => Account(id: 0, userId: '', name: 'Unknown', type: '', balance: 0, createdAt: DateTime.now()),
+        );
+        final destAccount = t.destinationAccountId != null
+            ? _accounts.firstWhere(
+                (a) => a.id == t.destinationAccountId,
+                orElse: () => Account(id: 0, userId: '', name: 'Unknown', type: '', balance: 0, createdAt: DateTime.now()),
+              )
+            : null;
+        
+        return t.copyWith(
+          accountName: account.name,
+          destinationAccountName: destAccount?.name,
+        );
+      }).toList();
+
       await _localStorage.saveCategories(_categories);
 
       setState(() {});
@@ -56,6 +75,25 @@ class _HomePageState extends State<HomePage> {
       _transactions = await _localStorage.getTransactions();
       _accounts = await _localStorage.getAccounts();
       _categories = await _localStorage.getCategories();
+
+      // Fill in account names from accounts list
+      _transactions = _transactions.map((t) {
+        final account = _accounts.firstWhere(
+          (a) => a.id == t.accountId,
+          orElse: () => Account(id: 0, userId: '', name: 'Unknown', type: '', balance: 0, createdAt: DateTime.now()),
+        );
+        final destAccount = t.destinationAccountId != null
+            ? _accounts.firstWhere(
+                (a) => a.id == t.destinationAccountId,
+                orElse: () => Account(id: 0, userId: '', name: 'Unknown', type: '', balance: 0, createdAt: DateTime.now()),
+              )
+            : null;
+        
+        return t.copyWith(
+          accountName: account.name,
+          destinationAccountName: destAccount?.name,
+        );
+      }).toList();
 
       if (_categories.isEmpty) {
         _categories = [
@@ -622,21 +660,53 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    isTransfer ? 'Transfer' : category.name,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: textColor,
+                  if (isTransfer)
+                    // Transfer: show Transfer label
+                    Text(
+                      'Transfer',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: textColor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  else if (transaction.description.isNotEmpty)
+                    // Expense/Income with description: show description
+                    Text(
+                      transaction.description,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: textColor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  else
+                    // Expense/Income without description: show category
+                    Text(
+                      category.name,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: textColor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
                   const SizedBox(height: 4),
                   Text(
-                    DateFormatter.formatDate(transaction.date),
+                    isTransfer
+                        ? '${transaction.accountName} → ${transaction.destinationAccountName}'
+                        : transaction.accountName ?? '',
                     style: TextStyle(
                       fontSize: 12,
                       color: secondaryTextColor,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
