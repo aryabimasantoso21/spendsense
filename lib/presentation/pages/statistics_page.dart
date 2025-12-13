@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/models/category_model.dart';
 import '../../data/services/local_storage_service.dart';
@@ -30,6 +31,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   List<Category> _categories = [];
   String _selectedType = 'expense';
   String _selectedPeriod = 'Monthly';
+  DateTime _selectedDate = DateTime.now();
 
   final List<Color> _categoryColors = [
     const Color(0xFFF5A572), // Orange/Coral
@@ -98,31 +100,35 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   List<Transaction> get _filteredTransactions {
-    final now = DateTime.now();
     var filtered = _transactions.where((t) => t.type == _selectedType).toList();
     
     // Filter by period
     switch (_selectedPeriod) {
       case 'Daily':
         filtered = filtered.where((t) => 
-          t.date.year == now.year && 
-          t.date.month == now.month && 
-          t.date.day == now.day
+          t.date.year == _selectedDate.year && 
+          t.date.month == _selectedDate.month && 
+          t.date.day == _selectedDate.day
         ).toList();
         break;
       case 'Weekly':
-        final weekStart = now.subtract(Duration(days: now.weekday - 1));
-        filtered = filtered.where((t) => 
-          t.date.isAfter(weekStart.subtract(const Duration(days: 1)))
-        ).toList();
+        final weekStart = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+        final weekEnd = weekStart.add(const Duration(days: 6));
+        filtered = filtered.where((t) {
+          final date = DateTime(t.date.year, t.date.month, t.date.day);
+          final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+          final end = DateTime(weekEnd.year, weekEnd.month, weekEnd.day);
+          return (date.isAtSameMomentAs(start) || date.isAfter(start)) && 
+                 (date.isAtSameMomentAs(end) || date.isBefore(end));
+        }).toList();
         break;
       case 'Monthly':
         filtered = filtered.where((t) => 
-          t.date.year == now.year && t.date.month == now.month
+          t.date.year == _selectedDate.year && t.date.month == _selectedDate.month
         ).toList();
         break;
       case 'Yearly':
-        filtered = filtered.where((t) => t.date.year == now.year).toList();
+        filtered = filtered.where((t) => t.date.year == _selectedDate.year).toList();
         break;
     }
     
@@ -146,6 +152,42 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   double get _totalAmount => _filteredTransactions.fold(0, (sum, t) => sum + t.amount);
+
+  void _navigateDate(int count) {
+    setState(() {
+      switch (_selectedPeriod) {
+        case 'Daily':
+          _selectedDate = _selectedDate.add(Duration(days: count));
+          break;
+        case 'Weekly':
+          _selectedDate = _selectedDate.add(Duration(days: count * 7));
+          break;
+        case 'Monthly':
+          _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + count);
+          break;
+        case 'Yearly':
+          _selectedDate = DateTime(_selectedDate.year + count);
+          break;
+      }
+    });
+  }
+
+  String get _dateRangeText {
+    switch (_selectedPeriod) {
+      case 'Daily':
+        return DateFormat('d MMMM yyyy').format(_selectedDate);
+      case 'Weekly':
+        final start = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+        final end = start.add(const Duration(days: 6));
+        return '${DateFormat('d MMM').format(start)} - ${DateFormat('d MMM yyyy').format(end)}';
+      case 'Monthly':
+        return DateFormat('MMMM yyyy').format(_selectedDate);
+      case 'Yearly':
+        return DateFormat('yyyy').format(_selectedDate);
+      default:
+        return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -265,6 +307,40 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       .toList(),
                   onChanged: (value) => setState(() => _selectedPeriod = value!),
                 ),
+              ),
+            ),
+
+            // Date Navigator
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () => _navigateDate(-1),
+                    color: textColor,
+                  ),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _dateRangeText,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: () => _navigateDate(1),
+                    color: textColor,
+                  ),
+                ],
               ),
             ),
 
