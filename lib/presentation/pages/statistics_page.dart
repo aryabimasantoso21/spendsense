@@ -365,37 +365,177 @@ class _StatisticsPageState extends State<StatisticsPage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDarkMode ? Colors.white : AppColors.text;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                fontSize: 16,
-                color: textColor,
+    return GestureDetector(
+      onTap: () => _showCategoryTransactionsDialog(name),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
               ),
             ),
-          ),
-          Text(
-            CurrencyFormatter.formatCurrency(amount),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: _selectedType == 'expense' ? AppColors.expense : AppColors.primary,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                name,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: textColor,
+                ),
+              ),
             ),
+            Text(
+              CurrencyFormatter.formatCurrency(amount),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: _selectedType == 'expense' ? AppColors.expense : AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCategoryTransactionsDialog(String categoryName) {
+    final categoryTransactions = _filteredTransactions
+        .where((t) {
+          final resolvedName = (t.categoryName != null && t.categoryName!.trim().isNotEmpty)
+              ? t.categoryName!.trim()
+              : _categories.firstWhere(
+                  (c) => c.id == t.categoryId,
+                  orElse: () => const Category(id: 0, type: '', name: 'Lainnya'),
+                ).name;
+          return resolvedName == categoryName;
+        })
+        .toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : AppColors.text;
+    final secondaryTextColor = isDarkMode ? Colors.white70 : AppColors.textSecondary;
+    final surfaceColor = isDarkMode ? const Color(0xFF2C2C2C) : AppColors.surface;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: surfaceColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    categoryName,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const Divider(),
+              
+              // Transactions List
+              if (categoryTransactions.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      'Tidak ada transaksi',
+                      style: TextStyle(color: secondaryTextColor),
+                    ),
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 300,
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: categoryTransactions.length,
+                      itemBuilder: (context, index) {
+                        final transaction = categoryTransactions[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          transaction.description.isNotEmpty 
+                                              ? transaction.description 
+                                              : 'No description',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: textColor,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          DateFormatter.formatDate(transaction.date),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: secondaryTextColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${_selectedType == 'expense' ? '-' : '+'}${CurrencyFormatter.formatCurrency(transaction.amount)}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: _selectedType == 'expense' ? AppColors.expense : AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (transaction.description.isEmpty) ...[
+                              const SizedBox(height: 4),
+                            ],
+                            const SizedBox(height: 8),
+                            Divider(color: secondaryTextColor.withValues(alpha: 0.3)),
+                          ],
+                        ),
+                      );
+                    },
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
