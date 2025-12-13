@@ -590,6 +590,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         .fold(0.0, (sum, t) => sum + t.amount);
 
     final dayName = _getDayName(date);
+    final monthName = DateFormat('MMMM').format(date);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,28 +599,48 @@ class _TransactionsPageState extends State<TransactionsPage> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
+              // Large date on the left
               Text(
                 date.day.toString().padLeft(2, '0'),
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 25,
                   fontWeight: FontWeight.bold,
                   color: textColor,
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: surfaceColor,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  dayName,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: secondaryTextColor,
+              const SizedBox(width: 12),
+              // Day and month stacked on the right
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dayName,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: textColor,
+                    ),
                   ),
-                ),
+                  Row(
+                    children: [
+                      Text(
+                        monthName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: secondaryTextColor,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        date.year.toString(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: secondaryTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
               const Spacer(),
               Text(
@@ -646,7 +667,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   String _getDayName(DateTime date) {
-    final days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    final days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     return days[date.weekday % 7];
   }
 
