@@ -333,9 +333,79 @@ class SupabaseService {
           .eq('user_id', user!.id)
           .order('created_at', ascending: false);
 
-      return (data as List).map((json) => Budget.fromJson(json)).toList();
+      final budgets = (data as List)
+          .map((json) => Budget.fromJson(json))
+          .toList();
+
+      // Auto-reset budgets that have passed their end date
+      final now = DateTime.now();
+      for (var budget in budgets) {
+        if (now.isAfter(budget.endDate)) {
+          await _resetBudgetPeriod(budget);
+        }
+      }
+
+      // Re-fetch budgets after any resets
+      final updatedData = await _client
+          .from('budgets')
+          .select()
+          .eq('user_id', user!.id)
+          .order('created_at', ascending: false);
+
+      return (updatedData as List)
+          .map((json) => Budget.fromJson(json))
+          .toList();
     } catch (e) {
       print('DEBUG: Error in getBudgets: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _resetBudgetPeriod(Budget budget) async {
+    try {
+      DateTime newStartDate = DateTime.now();
+      DateTime newEndDate;
+
+      if (budget.period == 'daily') {
+        newStartDate = DateTime(
+          newStartDate.year,
+          newStartDate.month,
+          newStartDate.day,
+        );
+        newEndDate = DateTime(
+          newStartDate.year,
+          newStartDate.month,
+          newStartDate.day,
+          23,
+          59,
+          59,
+        );
+      } else if (budget.period == 'weekly') {
+        newEndDate = newStartDate.add(const Duration(days: 7));
+      } else {
+        // monthly
+        newStartDate = DateTime(newStartDate.year, newStartDate.month, 1);
+        newEndDate = DateTime(
+          newStartDate.year,
+          newStartDate.month + 1,
+          0,
+          23,
+          59,
+          59,
+        );
+      }
+
+      await _client
+          .from('budgets')
+          .update({
+            'start_date': newStartDate.toIso8601String(),
+            'end_date': newEndDate.toIso8601String(),
+          })
+          .eq('id', budget.id!);
+
+      print('DEBUG: Budget ${budget.id} reset for new period');
+    } catch (e) {
+      print('DEBUG: Error resetting budget period: $e');
       rethrow;
     }
   }

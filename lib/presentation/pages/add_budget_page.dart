@@ -103,17 +103,19 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
           icon: Icon(Icons.arrow_back, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Add Budget', style: TextStyle(color: textColor)),
+        centerTitle: true,
+        title: Text(
+          'Add Budget',
+          style: TextStyle(
+            color: textColor,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         actions: [
-          TextButton(
-            onPressed: _saveBudget,
-            child: Text(
-              'SAVE',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Image.asset('img/logo.png', height: 32),
           ),
         ],
       ),
@@ -125,99 +127,70 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Name Field
-                  Text(
-                    'Name',
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _nameController,
-                    style: TextStyle(color: textColor),
-                    decoration: InputDecoration(
-                      hintText: "Budget's name",
-                      hintStyle: TextStyle(color: secondaryTextColor),
-                      filled: true,
-                      fillColor: cardColor,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                  _buildFormField(
+                    label: "Budget's Name",
+                    child: TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        hintText: "Budget's name",
+                        hintStyle: TextStyle(
+                          color: secondaryTextColor,
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: textColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
 
                   // Amount Field
-                  Text(
-                    'Amount',
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _amountController,
-                    style: TextStyle(color: textColor),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      hintText: "Rp 0",
-                      hintStyle: TextStyle(color: secondaryTextColor),
-                      filled: true,
-                      fillColor: cardColor,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                  _buildFormField(
+                    label: 'Amount',
+                    child: TextField(
+                      controller: _amountController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(
+                        hintText: 'Rp 0',
+                        hintStyle: TextStyle(
+                          color: secondaryTextColor,
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                      suffixIcon: Icon(
-                        Icons.arrow_drop_down,
-                        color: secondaryTextColor,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: textColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
 
                   // Category Field
-                  Text(
-                    'Category',
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  _buildFormField(
+                    label: 'Category',
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int?>(
                         value: _selectedCategoryId,
                         isExpanded: true,
                         hint: Text(
                           'Select Category',
-                          style: TextStyle(color: secondaryTextColor),
+                          style: TextStyle(
+                            color: secondaryTextColor,
+                            fontSize: 16,
+                          ),
                         ),
-                        dropdownColor: cardColor,
-                        style: TextStyle(color: textColor),
+                        style: TextStyle(color: textColor, fontSize: 16),
                         icon: Icon(
-                          Icons.arrow_drop_down,
+                          Icons.keyboard_arrow_down,
                           color: secondaryTextColor,
                         ),
                         items: [
@@ -243,32 +216,18 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
                   // Period Field
-                  Text(
-                    'Period',
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  _buildFormField(
+                    label: 'Period',
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _selectedPeriod,
                         isExpanded: true,
-                        dropdownColor: cardColor,
-                        style: TextStyle(color: textColor),
+                        style: TextStyle(color: textColor, fontSize: 16),
                         icon: Icon(
-                          Icons.arrow_drop_down,
+                          Icons.keyboard_arrow_down,
                           color: secondaryTextColor,
                         ),
                         items: ['Daily', 'Weekly', 'Monthly'].map((period) {
@@ -287,9 +246,59 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                       ),
                     ),
                   ),
+
+                  // Save Button
+                  const SizedBox(height: 36),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _saveBudget,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'SAVE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildFormField({required String label, required Widget child}) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final secondaryTextColor = isDarkMode
+        ? Colors.white70
+        : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 13, color: secondaryTextColor),
+          ),
+          const SizedBox(height: 8),
+          child,
+          Divider(
+            height: 1,
+            color: isDarkMode ? Colors.grey[800] : AppColors.border,
+          ),
+        ],
+      ),
     );
   }
 }

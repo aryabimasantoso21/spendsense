@@ -117,24 +117,25 @@ class BudgetCard extends StatelessWidget {
           Container(
             height: 8,
             decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
+              color: Colors.grey[300],
               borderRadius: BorderRadius.circular(4),
             ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: progress,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isOverBudget
-                        ? [AppColors.expense, const Color(0xFFE57373)]
-                        : [AppColors.primary, AppColors.accentDark],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+            child: Stack(
+              children: [
+                FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isOverBudget
+                          ? AppColors.expense
+                          : AppColors.primary,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(4),
                 ),
-              ),
+              ],
             ),
           ),
           const SizedBox(height: AppPadding.lg),

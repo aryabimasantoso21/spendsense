@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/budget_model.dart';
 import '../../data/models/transaction_model.dart';
+import '../../data/models/category_model.dart';
 import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
@@ -19,18 +20,33 @@ class BudgetDetailPage extends StatefulWidget {
 class _BudgetDetailPageState extends State<BudgetDetailPage> {
   final SupabaseService _supabase = SupabaseService.instance;
   List<Transaction> _transactions = [];
+  List<Category> _categories = [];
   bool _isLoading = true;
   double _spent = 0;
+  String _categoryName = '';
 
   @override
   void initState() {
     super.initState();
-    _loadTransactions();
+    _loadData();
   }
 
-  Future<void> _loadTransactions() async {
+  Future<void> _loadData() async {
     try {
+      // Load categories and transactions
+      _categories = await _supabase.getCategories();
       final allTransactions = await _supabase.getTransactions();
+
+      // Get category name
+      if (widget.budget.categoryId != null) {
+        final category = _categories.firstWhere(
+          (cat) => cat.id == widget.budget.categoryId,
+          orElse: () => const Category(id: 0, type: 'expense', name: 'Unknown'),
+        );
+        _categoryName = category.name;
+      } else {
+        _categoryName = 'All Categories';
+      }
 
       // Filter transactions based on budget period and category
       _transactions = allTransactions.where((t) {
@@ -118,6 +134,19 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     return remaining / daysLeft;
   }
 
+  String _getPeriodLabel() {
+    switch (widget.budget.period.toLowerCase()) {
+      case 'monthly':
+        return 'Monthly';
+      case 'weekly':
+        return 'Weekly';
+      case 'daily':
+        return 'Daily';
+      default:
+        return 'Monthly';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -167,9 +196,9 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Period Label
+                  // Title Label
                   Text(
-                    widget.budget.period.toUpperCase(),
+                    widget.budget.title,
                     style: TextStyle(
                       color: textColor,
                       fontSize: 28,
@@ -228,19 +257,22 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                       Container(
                         height: 24,
                         decoration: BoxDecoration(
-                          color: cardColor,
+                          color: isDarkMode
+                              ? Colors.grey[700]
+                              : Colors.grey[100],
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: (progress / 100).clamp(0.0, 1.0),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isOverBudget
-                                  ? AppColors.expense
-                                  : AppColors.primary,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                      ),
+                      FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: (progress / 100).clamp(0.0, 1.0),
+                        child: Container(
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: isOverBudget
+                                ? AppColors.expense
+                                : AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
@@ -263,7 +295,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                   // Budget Details
                   _buildDetailRow(
                     'Category',
-                    widget.budget.title,
+                    _categoryName,
                     textColor,
                     secondaryTextColor,
                   ),
@@ -277,7 +309,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                   const SizedBox(height: 16),
                   _buildDetailRow(
                     'Period',
-                    '${DateFormat('dd MMM yyyy').format(widget.budget.startDate)} - ${DateFormat('dd MMM yyyy').format(widget.budget.endDate)}\n${_getDaysLeft()} days left',
+                    '${_getPeriodLabel()} - ${DateFormat('dd MMM yyyy').format(widget.budget.startDate)} - ${DateFormat('dd MMM yyyy').format(widget.budget.endDate)}\n${_getDaysLeft()} days left',
                     textColor,
                     secondaryTextColor,
                   ),
@@ -288,8 +320,17 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                     height: 200,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: cardColor,
+                      color: isDarkMode
+                          ? const Color(0xFF1E1E1E)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: _buildSpendingChart(cardColor),
                   ),
@@ -406,65 +447,149 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
   }
 
   Widget _buildSpendingChart(Color cardColor) {
-    // Group transactions by date
-    final Map<DateTime, double> dailySpending = {};
-    for (var transaction in _transactions) {
-      final date = DateTime(
-        transaction.date.year,
-        transaction.date.month,
-        transaction.date.day,
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // Create full month range from budget period
+    final startDate = DateTime(
+      widget.budget.startDate.year,
+      widget.budget.startDate.month,
+      1,
+    );
+    final endDate = DateTime(
+      widget.budget.endDate.year,
+      widget.budget.endDate.month + 1,
+      0,
+    );
+
+    // Calculate cumulative spending per day
+    final Map<int, double> cumulativeSpending = {};
+    double runningTotal = 0;
+
+    for (int day = 1; day <= endDate.day; day++) {
+      final currentDate = DateTime(startDate.year, startDate.month, day);
+
+      // Add transactions for this day
+      final dayTransactions = _transactions.where(
+        (t) =>
+            t.date.year == currentDate.year &&
+            t.date.month == currentDate.month &&
+            t.date.day == currentDate.day,
       );
-      dailySpending[date] = (dailySpending[date] ?? 0) + transaction.amount;
+
+      for (var t in dayTransactions) {
+        runningTotal += t.amount;
+      }
+
+      cumulativeSpending[day] = runningTotal;
     }
 
-    final sortedDates = dailySpending.keys.toList()..sort();
-
-    if (sortedDates.isEmpty) {
-      return Center(
-        child: Text(
-          'No spending data',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
-    }
+    // Determine maxY (budget amount or max spending)
+    final maxSpending = runningTotal > 0 ? runningTotal : widget.budget.amount;
+    final maxY = maxSpending > widget.budget.amount
+        ? maxSpending * 1.1
+        : widget.budget.amount * 1.1;
 
     return LineChart(
       LineChartData(
-        gridData: FlGridData(show: true, drawVerticalLine: false),
+        minX: 1,
+        maxX: endDate.day.toDouble(),
+        minY: 0,
+        maxY: maxY,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: true,
+          horizontalInterval: maxY / 5,
+          verticalInterval: 5,
+          getDrawingHorizontalLine: (value) {
+            return FlLine(
+              color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+              strokeWidth: 1,
+              dashArray: [5, 5],
+            );
+          },
+          getDrawingVerticalLine: (value) {
+            return FlLine(
+              color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+              strokeWidth: 1,
+            );
+          },
+        ),
         titlesData: FlTitlesData(
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 50,
+              interval: maxY / 5,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  '${(value / 1000).toStringAsFixed(0)}k',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                );
+              },
+            ),
+          ),
           rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
+              interval: endDate.day > 15 ? 5 : 2,
               getTitlesWidget: (value, meta) {
-                if (value.toInt() >= 0 && value.toInt() < sortedDates.length) {
-                  return Text(
-                    DateFormat('MM/dd').format(sortedDates[value.toInt()]),
-                    style: const TextStyle(fontSize: 10),
+                if (value == 1 || value == endDate.day) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      '${startDate.month}/${value.toInt()}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
                   );
                 }
-                return const Text('');
+                return const SizedBox();
               },
             ),
           ),
         ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
+          // Budget limit line
           LineChartBarData(
-            spots: List.generate(
-              sortedDates.length,
-              (index) =>
-                  FlSpot(index.toDouble(), dailySpending[sortedDates[index]]!),
-            ),
-            isCurved: true,
+            spots: [
+              FlSpot(1, widget.budget.amount),
+              FlSpot(endDate.day.toDouble(), widget.budget.amount),
+            ],
+            isCurved: false,
+            color: AppColors.expense,
+            barWidth: 2,
+            dotData: FlDotData(show: false),
+            dashArray: [5, 5],
+          ),
+          // Spending line
+          LineChartBarData(
+            spots: List.generate(endDate.day, (index) {
+              final day = index + 1;
+              return FlSpot(day.toDouble(), cumulativeSpending[day] ?? 0);
+            }),
+            isCurved: false,
             color: AppColors.primary,
             barWidth: 3,
+            isStrokeCapRound: true,
             dotData: FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: AppColors.primary.withValues(alpha: 0.1),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.3),
+                  AppColors.primary.withOpacity(0.05),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
           ),
         ],
@@ -478,23 +603,36 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     Color secondaryTextColor,
     Color cardColor,
   ) {
+    final category = _categories.firstWhere(
+      (cat) => cat.id == transaction.categoryId,
+      orElse: () => const Category(id: 0, name: 'Other', type: 'expense'),
+    );
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cardColor,
+        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.expense.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.shopping_bag_outlined, color: AppColors.primary),
+            child: Icon(Icons.arrow_upward, color: AppColors.expense, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -502,15 +640,23 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  transaction.description ?? 'Transaction',
+                  transaction.description.isNotEmpty
+                      ? transaction.description
+                      : category.name,
                   style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
                     color: textColor,
-                    fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 4),
                 Text(
-                  '${_transactions.where((t) => t.categoryId == transaction.categoryId).length} transaction',
-                  style: TextStyle(color: secondaryTextColor, fontSize: 12),
+                  '${transaction.accountName ?? 'Account'} • ${DateFormat('dd MMM yyyy').format(transaction.date)}',
+                  style: TextStyle(fontSize: 12, color: secondaryTextColor),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -520,7 +666,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             style: TextStyle(
               color: AppColors.expense,
               fontWeight: FontWeight.w600,
-              fontSize: 16,
+              fontSize: 15,
             ),
           ),
         ],
