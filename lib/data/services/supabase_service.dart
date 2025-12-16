@@ -2,12 +2,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/transaction_model.dart';
 import '../models/account_model.dart';
 import '../models/category_model.dart';
+import '../models/budget_model.dart';
 
 class SupabaseService {
   static SupabaseService? _instance;
   late SupabaseClient _client;
   int? _cachedUserId;
-  
+
   SupabaseService._();
 
   static SupabaseService get instance {
@@ -23,17 +24,19 @@ class SupabaseService {
   Future<void> init() async {
     await Supabase.initialize(
       url: 'https://ctypfsyhsybkfaieyzrs.supabase.co',
-      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0eXBmc3loc3lia2ZhaWV5enJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTczOTgsImV4cCI6MjA3OTM3MzM5OH0.XAJZQNGXMJ77fUOFSvcrkn4WFi5bDkKzbuR_8MYvvlE',
+      anonKey:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0eXBmc3loc3lia2ZhaWV5enJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3OTczOTgsImV4cCI6MjA3OTM3MzM5OH0.XAJZQNGXMJ77fUOFSvcrkn4WFi5bDkKzbuR_8MYvvlE',
     );
     _client = Supabase.instance.client;
   }
 
   Future<int> _getUserId() async {
     if (_cachedUserId != null) return _cachedUserId!;
-    
-    if (user == null || user!.email == null) throw Exception('User not authenticated');
+
+    if (user == null || user!.email == null)
+      throw Exception('User not authenticated');
     final email = user!.email!;
-    
+
     try {
       // First attempt to find user
       var data = await _client
@@ -41,7 +44,7 @@ class SupabaseService {
           .select('user_id')
           .eq('email', email)
           .maybeSingle();
-          
+
       if (data != null) {
         _cachedUserId = data['user_id'] as int;
         return _cachedUserId!;
@@ -60,7 +63,7 @@ class SupabaseService {
             })
             .select('user_id')
             .single();
-            
+
         _cachedUserId = newData['user_id'] as int;
         return _cachedUserId!;
       } catch (e) {
@@ -72,12 +75,14 @@ class SupabaseService {
               .select('user_id')
               .eq('email', email)
               .maybeSingle();
-              
+
           if (retryData != null) {
             _cachedUserId = retryData['user_id'] as int;
             return _cachedUserId!;
           } else {
-            throw Exception("User exists but cannot be retrieved. Please check RLS policies.");
+            throw Exception(
+              "User exists but cannot be retrieved. Please check RLS policies.",
+            );
           }
         }
         rethrow;
@@ -94,8 +99,11 @@ class SupabaseService {
     required String username,
   }) async {
     try {
-      final response = await _client.auth.signUp(email: email, password: password);
-      
+      final response = await _client.auth.signUp(
+        email: email,
+        password: password,
+      );
+
       // Insert into users table immediately if signup is successful
       // Note: If email confirmation is enabled, this might need to be handled differently
       // or the table should allow unconfirmed users.
@@ -114,7 +122,7 @@ class SupabaseService {
           print('Error creating user record: $e');
         }
       }
-      
+
       return response;
     } catch (e) {
       rethrow;
@@ -190,10 +198,8 @@ class SupabaseService {
           .select()
           .eq('user_id', userId)
           .order('date', ascending: false);
-      
-      return (data as List)
-          .map((json) => Transaction.fromJson(json))
-          .toList();
+
+      return (data as List).map((json) => Transaction.fromJson(json)).toList();
     } catch (e) {
       rethrow;
     }
@@ -210,15 +216,18 @@ class SupabaseService {
 
   Future<void> updateTransaction(Transaction transaction) async {
     try {
-      await _client.from('transactions').update({
-        'description': transaction.description,
-        'amount': transaction.amount,
-        'type': transaction.type,
-        'category_id': transaction.categoryId,
-        'date': transaction.date.toIso8601String(),
-        'account_id': transaction.accountId,
-        'destination_account_id': transaction.destinationAccountId,
-      }).eq('transaction_id', transaction.id);
+      await _client
+          .from('transactions')
+          .update({
+            'description': transaction.description,
+            'amount': transaction.amount,
+            'type': transaction.type,
+            'category_id': transaction.categoryId,
+            'date': transaction.date.toIso8601String(),
+            'account_id': transaction.accountId,
+            'destination_account_id': transaction.destinationAccountId,
+          })
+          .eq('transaction_id', transaction.id);
       // Note: Account balance is updated automatically by database trigger
     } catch (e) {
       rethrow;
@@ -229,7 +238,7 @@ class SupabaseService {
   Future<void> saveAccount(Account account) async {
     try {
       final userId = await _getUserId();
-      
+
       await _client.from('accounts').insert({
         'user_id': userId,
         'account_name': account.name,
@@ -252,10 +261,8 @@ class SupabaseService {
           .select()
           .eq('user_id', userId)
           .order('created_at', ascending: false);
-      
-      return (data as List)
-          .map((json) => Account.fromJson(json))
-          .toList();
+
+      return (data as List).map((json) => Account.fromJson(json)).toList();
     } catch (e) {
       rethrow;
     }
@@ -271,11 +278,14 @@ class SupabaseService {
 
   Future<void> updateAccount(Account account) async {
     try {
-      await _client.from('accounts').update({
-        'account_name': account.name,
-        'account_type': account.type,
-        'balance': account.balance,
-      }).eq('account_id', account.id);
+      await _client
+          .from('accounts')
+          .update({
+            'account_name': account.name,
+            'account_type': account.type,
+            'balance': account.balance,
+          })
+          .eq('account_id', account.id);
     } catch (e) {
       rethrow;
     }
@@ -299,13 +309,146 @@ class SupabaseService {
   Future<List<Category>> getCategories() async {
     try {
       // Supabase existing struktur tidak punya user_id, jadi get semua categories
+      final data = await _client.from('categories').select();
+
+      return (data as List).map((json) => Category.fromJson(json)).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ==================== BUDGETS ====================
+  String? get currentUserId => user?.id;
+
+  Future<List<Budget>> getBudgets() async {
+    try {
+      if (user == null) {
+        print('DEBUG: User is null in getBudgets');
+        return [];
+      }
+
       final data = await _client
-          .from('categories')
-          .select();
-      
-      return (data as List)
-          .map((json) => Category.fromJson(json))
+          .from('budgets')
+          .select()
+          .eq('user_id', user!.id)
+          .order('created_at', ascending: false);
+
+      final budgets = (data as List)
+          .map((json) => Budget.fromJson(json))
           .toList();
+
+      // Auto-reset budgets that have passed their end date
+      final now = DateTime.now();
+      for (var budget in budgets) {
+        if (now.isAfter(budget.endDate)) {
+          await _resetBudgetPeriod(budget);
+        }
+      }
+
+      // Re-fetch budgets after any resets
+      final updatedData = await _client
+          .from('budgets')
+          .select()
+          .eq('user_id', user!.id)
+          .order('created_at', ascending: false);
+
+      return (updatedData as List)
+          .map((json) => Budget.fromJson(json))
+          .toList();
+    } catch (e) {
+      print('DEBUG: Error in getBudgets: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _resetBudgetPeriod(Budget budget) async {
+    try {
+      DateTime newStartDate = DateTime.now();
+      DateTime newEndDate;
+
+      if (budget.period == 'daily') {
+        newStartDate = DateTime(
+          newStartDate.year,
+          newStartDate.month,
+          newStartDate.day,
+        );
+        newEndDate = DateTime(
+          newStartDate.year,
+          newStartDate.month,
+          newStartDate.day,
+          23,
+          59,
+          59,
+        );
+      } else if (budget.period == 'weekly') {
+        newEndDate = newStartDate.add(const Duration(days: 7));
+      } else {
+        // monthly
+        newStartDate = DateTime(newStartDate.year, newStartDate.month, 1);
+        newEndDate = DateTime(
+          newStartDate.year,
+          newStartDate.month + 1,
+          0,
+          23,
+          59,
+          59,
+        );
+      }
+
+      await _client
+          .from('budgets')
+          .update({
+            'start_date': newStartDate.toIso8601String(),
+            'end_date': newEndDate.toIso8601String(),
+          })
+          .eq('id', budget.id!);
+
+      print('DEBUG: Budget ${budget.id} reset for new period');
+    } catch (e) {
+      print('DEBUG: Error resetting budget period: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> addBudget({
+    required String title,
+    required double amount,
+    required String period,
+    int? categoryId,
+  }) async {
+    try {
+      if (user == null) throw Exception('User not authenticated');
+
+      final now = DateTime.now();
+      DateTime startDate = now;
+      DateTime endDate;
+
+      if (period == 'daily') {
+        endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+      } else if (period == 'weekly') {
+        endDate = now.add(const Duration(days: 7));
+      } else {
+        // monthly
+        endDate = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+      }
+
+      await _client.from('budgets').insert({
+        'title': title,
+        'amount': amount,
+        'period': period,
+        'category_id': categoryId,
+        'start_date': startDate.toIso8601String(),
+        'end_date': endDate.toIso8601String(),
+        'user_id': user!.id,
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteBudget(int budgetId) async {
+    try {
+      await _client.from('budgets').delete().eq('id', budgetId);
     } catch (e) {
       rethrow;
     }
