@@ -58,6 +58,11 @@ Aplikasi memiliki kategori awal seperti:
 
 ## 📋 Cara Instalasi
 
+### **Langsung di Android**
+-Ke Bagian "release" pada repo github ini
+-Download spendsense.apk
+-Install pada android device anda
+
 ### 1️⃣ **Prasyarat (Prerequisites)**
 
 Pastikan komputer Anda telah menginstal software berikut:
