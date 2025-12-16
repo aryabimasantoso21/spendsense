@@ -136,10 +136,10 @@ class TransactionCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  if (transaction.description?.isNotEmpty ?? false) ...[
+                  if (transaction.description.isNotEmpty ?? false) ...[
                     const SizedBox(height: AppPadding.xs),
                     Text(
-                      transaction.description!,
+                      transaction.description,
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.textTertiary,
                         fontStyle: FontStyle.italic,
