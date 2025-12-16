@@ -449,7 +449,23 @@ flutter run
 
 ## 📱 Screenshot & Demo
 
-Tambahkan screenshot aplikasi di sini (opsional)
+### Light Mode
+- Splash — ![Splash](img/ss_light/ss_splash.png)
+- Login — ![Login](img/ss_light/ss_login.png)
+- Home — ![Home](img/ss_light/ss_home.png)
+- Stats — ![Stats](img/ss_light/ss_stats.png)
+- History — ![History](img/ss_light/ss_history.png)
+- Accounts — ![Accounts](img/ss_light/ss_accounts.png)
+- Input — ![Input](img/ss_light/ss_input.png)
+- Budget — ![Budget](img/ss_light/ss_budget.png)
+- Profile — ![Profile](img/ss_light/ss_profile.png)
+
+### Dark Mode
+- Home — ![Home Dark](img/ss_dark/ss_home_dark.png)
+- Stats — ![Stats Dark](img/ss_dark/ss_stats_dark.png)
+- History — ![History Dark](img/ss_dark/ss_history_dark.png)
+- Accounts — ![Accounts Dark](img/ss_dark/ss_accounts_dark.png)
+- Profile — ![Profile Dark](img/ss_dark/ss_profile_dark.png)
 
 ---
 
