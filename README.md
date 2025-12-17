@@ -9,68 +9,16 @@ SpendSense membantu pengguna mencatat pemasukan, pengeluaran, dan transfer antar
 
 ---
 
-## 🎯 Deskripsi Proyek
+## 📋 Getting Started
 
-**SpendSense** adalah aplikasi manajemen keuangan pribadi yang dirancang untuk memudahkan pengguna dalam:
-
-- 💰 **Mencatat Transaksi** - Mencatat pemasukan (income), pengeluaran (expense), dan transfer antar akun
-- 🏦 **Mengelola Akun** - Membuat dan mengelola berbagai akun (Bank, Cash, E-Wallet)
-- 📊 **Visualisasi Data** - Melihat statistik pengeluaran dan pemasukan dalam bentuk chart/grafik
-- 🔐 **Keamanan Data** - Setiap user hanya bisa melihat data miliknya sendiri
-- 🌐 **Multi-Platform** - Tersedia untuk Android, iOS, Web, Windows, dan Linux
-
-### 🚀 Fitur Utama
-
-#### **Manajemen Pengguna**
-- ✅ Registrasi & Login dengan Email
-- ✅ Penyimpanan total balance per user
-- ✅ Isolasi data: setiap user hanya melihat datanya sendiri
-
-#### **Manajemen Akun**
-- ✅ Tambah akun (Bank / Cash / E-Wallet)
-- ✅ Penyimpanan saldo untuk masing-masing akun
-- ✅ Transfer uang antar akun
-
-#### **Manajemen Transaksi**
-- ✅ Pencatatan **Income**, **Expense**, dan **Transfer**
-- ✅ Pengkategorian otomatis berdasarkan jenis transaksi
-- ✅ List transaksi yang terurut otomatis berdasarkan tanggal (terbaru di atas)
-
-#### **Kategori Default**
-Aplikasi memiliki kategori awal seperti:
-- **Income**: Gaji, Hadiah, Investasi  
-- **Expense**: Makanan & Minuman, Transportasi, Belanja, Tagihan, Hiburan, Kesehatan, Pendidikan
-
-### 🛠️ **Tech Stack**
-
-| Teknologi | Versi | Fungsi |
-|-----------|-------|--------|
-| **Flutter** | ^3.9.2 | Framework UI cross-platform |
-| **Dart** | ^3.9.2 | Programming language |
-| **Supabase** | ^2.10.3 | Backend & Database (PostgreSQL) |
-| **Material Design 3** | - | UI Design System |
-| **FL Chart** | ^0.68.0 | Data visualization library |
-| **Image Picker** | ^1.2.1 | Galeri & Camera picker |
-| **Shared Preferences** | ^2.2.2 | Local storage |
-| **IntL** | ^0.20.2 | Internationalization |
-
----
-
-## 📋 Cara Instalasi
-
-### **Langsung di Android**
-- Ke bagian **Release** pada repo GitHub ini
-- Download `spendsense.apk`
-- Install pada Android device Anda
-
-### 1️⃣ **Prasyarat (Prerequisites)**
+### 1️⃣ **Prerequisites**
 
 Pastikan komputer Anda telah menginstal software berikut:
 
 - **Git** → https://git-scm.com/downloads  
 - **VS Code** → https://code.visualstudio.com  
 - **Flutter SDK** → https://docs.flutter.dev/get-started/install  
-  - Pastikan `flutter doctor` centang hijau semua ✅
+- Pastikan `flutter doctor` centang hijau semua ✅
 - **Android Studio** (untuk emulator Android)
 - **Xcode** (untuk iOS - hanya macOS)
 
@@ -99,7 +47,7 @@ flutter pub get
 7. Klik **Create Project**  
 8. Tunggu hingga status menjadi hijau/aktif (~2-3 menit)
 
-#### **Step 2: Buat Tabel Database**
+#### **Step 2: Create Table Database**
 
 1. Di dashboard Supabase, buka menu **SQL Editor**
 2. Copy dan paste SQL query di bawah ini → klik **Run**:
@@ -184,9 +132,9 @@ INSERT INTO categories (type, name) VALUES
 
 ---
 
-## 🚀 Cara Menjalankan
+## 🚀 Run SpendSense
 
-### **🤖 Untuk Android (Emulator atau Device)**
+### **🤖 Android (Emulator atau Device)**
 
 #### **Opsi 1: Menggunakan Android Emulator**
 
@@ -261,6 +209,53 @@ flutter run -d firefox
 ```bash
 flutter run -d windows
 ```
+
+---
+
+## 🎯 Deskripsi Proyek
+
+**SpendSense** adalah aplikasi manajemen keuangan pribadi yang dirancang untuk memudahkan pengguna dalam:
+
+- 💰 **Mencatat Transaksi** - Mencatat pemasukan (income), pengeluaran (expense), dan transfer antar akun
+- 🏦 **Mengelola Akun** - Membuat dan mengelola berbagai akun (Bank, Cash, E-Wallet)
+- 📊 **Visualisasi Data** - Melihat statistik pengeluaran dan pemasukan dalam bentuk chart/grafik
+- 🔐 **Keamanan Data** - Setiap user hanya bisa melihat data miliknya sendiri
+- 🌐 **Multi-Platform** - Tersedia untuk Android, iOS, Web, Windows, dan Linux
+
+### 🚀 Fitur Utama
+
+#### **Manajemen Pengguna**
+- ✅ Registrasi & Login dengan Email
+- ✅ Penyimpanan total balance per user
+- ✅ Isolasi data: setiap user hanya melihat datanya sendiri
+
+#### **Manajemen Akun**
+- ✅ Tambah akun (Bank / Cash / E-Wallet)
+- ✅ Penyimpanan saldo untuk masing-masing akun
+- ✅ Transfer uang antar akun
+
+#### **Manajemen Transaksi**
+- ✅ Pencatatan **Income**, **Expense**, dan **Transfer**
+- ✅ Pengkategorian otomatis berdasarkan jenis transaksi
+- ✅ List transaksi yang terurut otomatis berdasarkan tanggal (terbaru di atas)
+
+#### **Kategori Default**
+Aplikasi memiliki kategori awal seperti:
+- **Income**: Gaji, Hadiah, Investasi  
+- **Expense**: Makanan & Minuman, Transportasi, Belanja, Tagihan, Hiburan, Kesehatan, Pendidikan
+
+### 🛠️ **Tech Stack**
+
+| Teknologi | Versi | Fungsi |
+|-----------|-------|--------|
+| **Flutter** | ^3.9.2 | Framework UI cross-platform |
+| **Dart** | ^3.9.2 | Programming language |
+| **Supabase** | ^2.10.3 | Backend & Database (PostgreSQL) |
+| **Material Design 3** | - | UI Design System |
+| **FL Chart** | ^0.68.0 | Data visualization library |
+| **Image Picker** | ^1.2.1 | Galeri & Camera picker |
+| **Shared Preferences** | ^2.2.2 | Local storage |
+| **IntL** | ^0.20.2 | Internationalization |
 
 ---
 
@@ -485,7 +480,13 @@ flutter run
 
 ## 👥 Kontributor
 
-- **Lead Developer**: Arya Bima Santoso
+- **Developer**: Aryabima Kurnia Pratama Santoso
+                 Daniel Bara Seftino
+                 Oryza Reynaleta Wibowo
+                 Tiffany Catherine Prasetya
+                 Farrel Aditya Rosyidi
+                 Rafael Dimas Kristianto
+                 Javed Amani Syauki
 - **GitHub**: https://github.com/aryabimasantoso21
 
 ---
@@ -493,6 +494,12 @@ flutter run
 ## 📞 Contact & Support
 
 - **Email**: aryabimasantoso21@gmail.com
+             farreladitya003@gmail.com
+             dimasrafael62@gmail.com
+             javedamani124@gmail.com
+             danielbara12345@gmail.com
+             tiffanycatherine08@gmail.com
+             oryzareyyy@gmail.com
 - **Repository**: https://github.com/aryabimasantoso21/spendsense
 - **Issues**: https://github.com/aryabimasantoso21/spendsense/issues
 
@@ -500,10 +507,8 @@ flutter run
 
 ## 📄 Lisensi
 
-Proyek ini bersifat open-source untuk tujuan pendidikan.
+Proyek ini bersifat open-source dengan izin kontributor
 
 ---
-
-**Made with ❤️ using Flutter & Supabase**
 
 **Last Updated**: Desember 2025
