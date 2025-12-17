@@ -169,20 +169,6 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           _buildSettingItem(
-            icon: Icons.person_add_outlined,
-            title: 'Invite Friends',
-            textColor: textColor,
-            iconColor: secondaryTextColor,
-            onTap: () {},
-          ),
-          _buildSettingItem(
-            icon: Icons.account_balance_wallet_outlined,
-            title: 'My Wallet',
-            textColor: textColor,
-            iconColor: secondaryTextColor,
-            onTap: () {},
-          ),
-          _buildSettingItem(
             icon: Icons.info_outline,
             title: 'About us',
             textColor: textColor,

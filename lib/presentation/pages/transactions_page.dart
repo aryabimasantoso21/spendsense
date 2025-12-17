@@ -667,7 +667,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   String _getDayName(DateTime date) {
-    final days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    final days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[date.weekday % 7];
   }
 
