@@ -116,12 +116,16 @@ INSERT INTO categories (type, name) VALUES
 
 #### **Step 3: Dapatkan Supabase Credentials**
 1. Di dashboard Supabase, buka menu **Settings** → **API**
-2. Copy **Project URL** dan **anon key** (jangan dibagikan!)
-3. Buka file `lib/main.dart` di VS Code
+2. Copy **Project URL** dan **anon key**
+3. Buka file `lib/data/services/supabase_service.dart` di VS Code
 4. Cari dan ganti variable:
    ```dart
-   const String SUPABASE_URL = 'YOUR_PROJECT_URL';
-   const String SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+    Future<void> init() async {
+        await Supabase.initialize(
+            url: 'YOUR_PROJECT_URL',
+            anonKey: 'YOUR_ANON_KEY',
+    );
+    
    ```
    Ganti dengan URL dan key dari Supabase Anda
 
