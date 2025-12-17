@@ -473,7 +473,7 @@ flutter run
 
 ---
 
-## 📚 Resources & Dokumentasi
+## 📚 Resources & Documentation
 
 - **Flutter Documentation**: https://docs.flutter.dev
 - **Supabase Documentation**: https://supabase.com/docs
@@ -511,7 +511,7 @@ flutter run
 
 ---
 
-## 📄 Lisensi
+## 📄 License
 
 Proyek ini bersifat open-source dengan izin kontributor
 
