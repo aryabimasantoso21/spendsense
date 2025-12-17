@@ -661,35 +661,13 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Budget',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-              if (_budgets.isNotEmpty)
-                GestureDetector(
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Manage all budgets coming soon!'),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Manage(${_budgets.length})',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-            ],
+          Text(
+            'Budget',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
           ),
           const SizedBox(height: 16),
 

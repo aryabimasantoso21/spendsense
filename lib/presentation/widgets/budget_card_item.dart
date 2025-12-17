@@ -34,6 +34,7 @@ class BudgetCardItem extends StatelessWidget {
     final cardColor = isDarkMode ? const Color(0xFF1E1E1E) : Colors.white;
 
     final remaining = budget.amount - spent;
+    final exceeded = spent - budget.amount;
     final progress = budget.amount > 0
         ? (spent / budget.amount).clamp(0.0, 1.0)
         : 0.0;
@@ -59,13 +60,45 @@ class BudgetCardItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Period Label
-            Text(
-              _getPeriodLabel(),
-              style: AppTextStyles.overline.copyWith(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
+            // Period Label and Warning
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _getPeriodLabel(),
+                  style: AppTextStyles.overline.copyWith(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                if (isOverBudget)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.expense.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.warning_rounded,
+                          size: 14,
+                          color: AppColors.expense,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Over Budget!}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.expense,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: AppPadding.sm),
 
@@ -82,7 +115,9 @@ class BudgetCardItem extends StatelessWidget {
 
             // Remaining amount
             Text(
-              'Remain ${CurrencyFormatter.formatCurrency(remaining.abs())}',
+              isOverBudget
+                  ? 'Over ${CurrencyFormatter.formatCurrency(exceeded.abs())}'
+                  : 'Remain ${CurrencyFormatter.formatCurrency(remaining)}',
               style: AppTextStyles.body.copyWith(
                 color: isOverBudget
                     ? AppColors.expense

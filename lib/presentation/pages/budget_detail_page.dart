@@ -166,25 +166,24 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: backgroundColor,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Budget', style: TextStyle(color: textColor)),
+        title: Text(
+          'Budget Detail',
+          style: TextStyle(
+            color: textColor,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.edit_outlined, color: textColor),
-            onPressed: () {
-              // TODO: Implement edit budget
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit budget coming soon!')),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: textColor),
+            icon: Icon(Icons.delete_outline, color: AppColors.expense),
             onPressed: _deleteBudget,
           ),
         ],

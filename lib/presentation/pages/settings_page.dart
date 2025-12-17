@@ -15,8 +15,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  double _totalIncome = 0;
-  double _totalExpense = 0;
+  String _username = 'User';
+  String _email = '';
 
   @override
   void initState() {
@@ -25,13 +25,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadData() async {
-    final transactions = await widget.localStorage.getTransactions();
-    _totalIncome = transactions
-        .where((t) => t.type == 'income')
-        .fold(0.0, (sum, t) => sum + t.amount);
-    _totalExpense = transactions
-        .where((t) => t.type == 'expense')
-        .fold(0.0, (sum, t) => sum + t.amount);
+    _username = await SupabaseService.instance.getUsername();
+    _email = SupabaseService.instance.user?.email ?? '';
     if (mounted) setState(() {});
   }
 
@@ -99,98 +94,55 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         children: [
-          const SizedBox(height: 16),
-          // Income/Outcome Summary Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDarkMode
-                    ? [const Color(0xFF004D40), const Color(0xFF00796B)]
-                    : [AppColors.primary, AppColors.primaryLight],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
+          const SizedBox(height: 32),
+          // Profile Section
+          Center(
+            child: Column(
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_downward,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Income',
-                            style: TextStyle(color: Colors.white70, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        CurrencyFormatter.formatCurrency(_totalIncome),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                // Profile Picture
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: isDarkMode
+                          ? [const Color(0xFF004D40), const Color(0xFF00796B)]
+                          : [AppColors.primary, AppColors.primaryLight],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
                       ),
                     ],
                   ),
+                  child: Icon(
+                    Icons.person,
+                    size: 60,
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
                 ),
-                Container(width: 1, height: 60, color: Colors.white24),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_upward,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Outcome',
-                              style: TextStyle(color: Colors.white70, fontSize: 14),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          CurrencyFormatter.formatCurrency(_totalExpense),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+                const SizedBox(height: 20),
+                // Username
+                Text(
+                  _username,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Email
+                Text(
+                  _email,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: secondaryTextColor,
                   ),
                 ),
               ],
