@@ -484,26 +484,28 @@ flutter run
 
 ## 👥 Kontributor
 
-- **Developer**: Aryabima Kurnia Pratama Santoso
-                 Daniel Bara Seftino
-                 Oryza Reynaleta Wibowo
-                 Tiffany Catherine Prasetya
-                 Farrel Aditya Rosyidi
-                 Rafael Dimas Kristianto
-                 Javed Amani Syauki
+- **Developer**: 
+  1. Aryabima Kurnia Pratama Santoso
+  2. Daniel Bara Seftino
+  3. Oryza Reynaleta Wibowo
+  4. Tiffany Catherine Prasetya
+  5. Farrel Aditya Rosyidi
+  6. Rafael Dimas Kristianto
+  7. Javed Amani Syauki
 - **GitHub**: https://github.com/aryabimasantoso21
 
 ---
 
 ## 📞 Contact & Support
 
-- **Email**: aryabimasantoso21@gmail.com
-             farreladitya003@gmail.com
-             dimasrafael62@gmail.com
-             javedamani124@gmail.com
-             danielbara12345@gmail.com
-             tiffanycatherine08@gmail.com
-             oryzareyyy@gmail.com
+- **Email**: 
+  1. aryabimasantoso21@gmail.com
+  2. farreladitya003@gmail.com
+  3. dimasrafael62@gmail.com
+  4. javedamani124@gmail.com
+  5. anielbara12345@gmail.com
+  6. tiffanycatherine08@gmail.com
+  7. oryzareyyy@gmail.com
 - **Repository**: https://github.com/aryabimasantoso21/spendsense
 - **Issues**: https://github.com/aryabimasantoso21/spendsense/issues
 
