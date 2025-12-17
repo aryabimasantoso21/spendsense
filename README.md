@@ -11,7 +11,41 @@ SpendSense membantu pengguna mencatat pemasukan, pengeluaran, dan transfer antar
 
 ## 📋 Getting Started
 
-### 1️⃣ **Prerequisites**
+### 📱 **Cara Termudah: Install APK (Recommended)**
+
+Langsung install aplikasi di Android tanpa perlu setup development environment!
+
+#### **1️⃣ Download APK**
+1. Buka halaman [Releases](https://github.com/aryabimasantoso21/spendsense/releases)
+2. Download file **`spendsense-v0.1.0.apk`** dari release terbaru
+3. Atau download langsung: [SpendSense v0.1.0](https://github.com/aryabimasantoso21/spendsense/releases/tag/v0.1.0)
+
+#### **2️⃣ Install di Android**
+1. **Transfer APK ke HP Android** (via USB, Bluetooth, atau download langsung di HP)
+2. **Buka file APK** di HP
+3. Jika muncul peringatan "Install dari sumber tidak dikenal":
+   - Buka **Settings** → **Security** → Aktifkan **Unknown Sources** atau **Install Unknown Apps**
+4. Klik **Install** dan tunggu hingga selesai
+5. Buka aplikasi **SpendSense** dan mulai gunakan! 🎉
+
+#### **3️⃣ Buat Akun**
+1. Buka aplikasi SpendSense
+2. Klik tombol **Register** untuk membuat akun baru
+3. Isi **Username**, **Email**, dan **Password**
+4. Login dan mulai kelola keuangan Anda!
+
+> **Catatan**: Backend menggunakan Supabase yang sudah dikonfigurasi, jadi Anda bisa langsung menggunakan aplikasi tanpa setup tambahan!
+
+---
+
+### 🛠️ **Untuk Developer: Build dari Source Code**
+
+Jika Anda ingin build aplikasi dari source code atau berkontribusi dalam development:
+
+<details>
+<summary><b>Klik untuk melihat panduan developer</b></summary>
+
+#### **Prerequisites**
 
 Pastikan komputer Anda telah menginstal software berikut:
 
@@ -22,22 +56,26 @@ Pastikan komputer Anda telah menginstal software berikut:
 - **Android Studio** (untuk emulator Android)
 - **Xcode** (untuk iOS - hanya macOS)
 
-### 2️⃣ **Clone Repository**
+#### **Clone Repository**
 
 ```bash
 git clone https://github.com/aryabimasantoso21/spendsense.git
 cd spendsense
 ```
 
-### 3️⃣ **Install Flutter Dependencies**
+#### **Install Flutter Dependencies**
 
 ```bash
 flutter pub get
 ```
 
-### 4️⃣ **Setup Backend (Supabase)**
+#### **Setup Backend (Optional - Sudah Ada Default)**
 
-#### **Step 1: Buat Project Supabase**
+#### **Setup Backend (Optional - Sudah Ada Default)**
+
+Aplikasi sudah terhubung ke backend Supabase default. Jika Anda ingin menggunakan backend sendiri:
+
+##### **Step 1: Buat Project Supabase**
 1. Buka https://supabase.com  
 2. Login / Sign Up dengan akun Google atau Email  
 3. Klik tombol **New Project**  
@@ -47,7 +85,7 @@ flutter pub get
 7. Klik **Create Project**  
 8. Tunggu hingga status menjadi hijau/aktif (~2-3 menit)
 
-#### **Step 2: Create Table Database**
+##### **Step 2: Create Table Database**
 
 1. Di dashboard Supabase, buka menu **SQL Editor**
 2. Copy dan paste SQL query di bawah ini → klik **Run**:
@@ -114,7 +152,7 @@ INSERT INTO categories (type, name) VALUES
 ('expense', 'Pendidikan');
 ```
 
-#### **Step 3: Dapatkan Supabase Credentials**
+##### **Step 3: Dapatkan Supabase Credentials**
 1. Di dashboard Supabase, buka menu **Settings** → **API**
 2. Copy **Project URL** dan **anon key**
 3. Buka file `lib/data/services/supabase_service.dart` di VS Code
@@ -129,18 +167,16 @@ INSERT INTO categories (type, name) VALUES
    ```
    Ganti dengan URL dan key dari Supabase Anda
 
-#### **Step 4: Enable Authentication**
+##### **Step 4: Enable Authentication**
 1. Di dashboard Supabase, buka menu **Authentication** → **Providers**
 2. Cari provider **Email** dan pastikan toggle aktif (warna biru)
 3. Konfigurasi email templates jika diperlukan
 
----
+#### **Build & Run**
 
-## 🚀 Run SpendSense
+##### **🤖 Android (Emulator atau Device)**
 
-### **🤖 Android (Emulator atau Device)**
-
-#### **Opsi 1: Menggunakan Android Emulator**
+###### **Opsi 1: Menggunakan Android Emulator**
 
 ```bash
 # Lihat emulator yang tersedia
@@ -153,7 +189,7 @@ flutter emulators --launch <nama>
 flutter run
 ```
 
-#### **Opsi 2: Menggunakan Device Android Fisik**
+###### **Opsi 2: Menggunakan Device Android Fisik**
 
 ```bash
 # Aktifkan USB Debugging di device Android
@@ -167,52 +203,50 @@ flutter devices
 flutter run
 ```
 
-#### **Mode Release (Produksi)**
+###### **Build APK Release**
 ```bash
-flutter run --release
+flutter build apk --release
+# APK akan tersimpan di: build/app/outputs/flutter-apk/app-release.apk
 ```
 
----
+##### **🍎 iOS (macOS only)**
 
-### **🍎 Untuk iOS (macOS only)**
-
-#### **Step 1: Setup iOS Dependencies**
 ```bash
 cd ios
 pod install
 cd ..
-```
-
-#### **Step 2: Buka Simulator iOS**
-```bash
 open -a Simulator
-```
-
-#### **Step 3: Jalankan Aplikasi**
-```bash
 flutter run
 ```
 
----
-
-### **🌐 Untuk Web**
+##### **🌐 Web**
 
 ```bash
 flutter run -d chrome
 ```
 
-Atau:
-```bash
-flutter run -d firefox
-```
-
----
-
-### **🪟 Untuk Windows**
+##### **🪟 Windows**
 
 ```bash
 flutter run -d windows
 ```
+
+</details>
+
+---
+
+## 🚀 Quick Start Guide
+
+### **Langkah Cepat Mulai Menggunakan SpendSense:**
+
+1. **Download & Install APK** dari [GitHub Releases](https://github.com/aryabimasantoso21/spendsense/releases)
+2. **Register akun baru** dengan email dan password
+3. **Tambah akun pertama** (Bank/Cash/E-Wallet) dengan saldo awal
+4. **Catat transaksi pertama** - Expense, Income, atau Transfer
+5. **Buat budget** untuk kontrol pengeluaran per kategori
+6. **Lihat statistik** pengeluaran Anda di tab Statistics
+
+🎉 Selamat! Anda sudah siap mengelola keuangan dengan SpendSense!
 
 ---
 
