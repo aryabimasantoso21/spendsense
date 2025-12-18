@@ -296,74 +296,70 @@ Aplikasi memiliki kategori awal seperti:
 
 ---
 
-## 📁 Struktur Folder
+## 📁 Struktur Folder & Database
+
+### **📂 Project Folder Structure**
 
 ```
 spendsense/
 ├── 📄 pubspec.yaml                # Konfigurasi project & dependencies
 ├── 📄 analysis_options.yaml       # Analisis code style
 ├── 📄 l10n.yaml                   # Konfigurasi localization
-├── 📄 README.md                   # Dokumentasi project (file ini)
+├── 📄 README.md                   # Dokumentasi project
 │
 ├── 📂 lib/                        # 🎯 SOURCE CODE UTAMA
 │   ├── 📄 main.dart              # Entry point aplikasi
 │   │
 │   ├── 📂 data/                   # Data Layer
 │   │   ├── 📂 models/            # Model data structure
-│   │   │   ├── user_model.dart
-│   │   │   ├── account_model.dart
-│   │   │   ├── transaction_model.dart
-│   │   │   └── category_model.dart
+│   │   │   ├── account_model.dart        # Model untuk Account
+│   │   │   ├── budget_model.dart         # Model untuk Budget
+│   │   │   ├── category_model.dart       # Model untuk Category
+│   │   │   └── transaction_model.dart    # Model untuk Transaction
+│   │   │
 │   │   └── 📂 services/          # API & Database services
-│   │       ├── auth_service.dart
-│   │       ├── account_service.dart
-│   │       └── transaction_service.dart
+│   │       ├── supabase_service.dart      # Supabase backend connector
+│   │       ├── local_storage_service.dart # Local storage (SharedPreferences)
+│   │       └── theme_service.dart         # Theme management (Light/Dark)
 │   │
-│   ├── 📂 pages/                  # UI Pages/Screens
-│   │   ├── 📂 auth/              # Authentication pages
-│   │   │   ├── login_page.dart
-│   │   │   └── register_page.dart
-│   │   ├── 📂 home/              # Home/Dashboard page
-│   │   │   └── home_page.dart
-│   │   ├── 📂 transactions/      # Transaction management
-│   │   │   ├── transaction_list_page.dart
-│   │   │   └── add_transaction_page.dart
-│   │   ├── 📂 accounts/          # Account management
-│   │   │   ├── account_list_page.dart
-│   │   │   └── add_account_page.dart
-│   │   └── 📂 profile/           # User profile
-│   │       └── profile_page.dart
+│   ├── 📂 pages/                  # UI Pages/Screens (Screens)
+│   │   ├── splash_screen.dart           # Loading screen pertama
+│   │   ├── login_page.dart              # Login page
+│   │   ├── register_page.dart           # Register page
+│   │   ├── home_page.dart               # Home/Dashboard
+│   │   ├── transactions_page.dart       # List transaksi
+│   │   ├── transactions_page_new.dart   # New transactions view
+│   │   ├── add_transaction_page.dart    # Add/Edit transaction
+│   │   ├── accounts_page.dart           # List accounts
+│   │   ├── add_account_page.dart        # Add/Edit account
+│   │   ├── edit_account_balance_page.dart # Edit balance
+│   │   ├── add_budget_page.dart         # Add/Edit budget
+│   │   ├── budget_detail_page.dart      # Budget detail & tracking
+│   │   ├── statistics_page.dart         # Charts & analytics
+│   │   ├── settings_page.dart           # Settings & preferences
+│   │   └── upload_image_page.dart       # Image upload feature
 │   │
-│   ├── 📂 presentation/           # Business Logic & State Management
-│   │   ├── 📂 providers/         # Provider/Controller
-│   │   │   ├── auth_provider.dart
-│   │   │   ├── account_provider.dart
-│   │   │   └── transaction_provider.dart
-│   │   └── 📂 widgets/           # Reusable widgets
-│   │       ├── app_button.dart
-│   │       ├── app_card.dart
-│   │       └── transaction_item.dart
+│   ├── 📂 presentation/           # Presentation Layer
+│   │   ├── 📂 pages/             # Pages (empty - semua di lib/pages)
+│   │   │
+│   │   └── 📂 widgets/           # Reusable UI Components
+│   │       ├── account_card.dart         # Account card widget
+│   │       ├── budget_card.dart          # Budget card widget (main)
+│   │       ├── budget_card_item.dart     # Budget card item (list)
+│   │       └── transaction_card.dart     # Transaction card widget
 │   │
 │   ├── 📂 utils/                  # Utility & Helper Functions
-│   │   ├── 📂 constants/         # Constants & enums
-│   │   │   ├── app_colors.dart
-│   │   │   ├── app_strings.dart
-│   │   │   └── transaction_types.dart
-│   │   ├── 📂 helpers/           # Helper functions
-│   │   │   ├── date_helper.dart
-│   │   │   ├── currency_helper.dart
-│   │   │   └── validation_helper.dart
-│   │   └── 📂 validators/        # Input validators
-│   │       ├── email_validator.dart
-│   │       └── amount_validator.dart
+│   │   ├── constants.dart         # App colors, strings, sizes, styles
+│   │   └── formatters.dart        # Formatters untuk currency, date, dll
 │   │
 │   └── 📂 l10n/                   # Localization (Multi-language)
 │       ├── app_en.arb           # English translations
-│       ├── app_id.arb           # Indonesian translations
-│       └── app_localizations_en.dart
+│       └── app_id.arb           # Indonesian translations
 │
 ├── 📂 android/                    # Android Native Code
 │   ├── 📄 build.gradle.kts       # Gradle configuration
+│   ├── 📄 local.properties       # Local Android SDK path
+│   ├── 📄 gradle.properties      # Gradle properties
 │   ├── 📂 app/
 │   │   ├── build.gradle.kts
 │   │   └── 📂 src/
@@ -375,7 +371,7 @@ spendsense/
 ├── 📂 ios/                        # iOS Native Code
 │   ├── 📂 Runner/                # iOS app resources
 │   ├── 📂 Runner.xcodeproj/      # Xcode project
-│   └── 📂 Pods/                  # CocoaPods dependencies
+│   └── 📂 Runner.xcworkspace/    # Cocoapods workspace
 │
 ├── 📂 web/                        # Web Platform
 │   ├── 📄 index.html             # Web entry point
@@ -393,31 +389,146 @@ spendsense/
 │   └── 📂 flutter/
 │
 ├── 📂 test/                       # Unit & Widget Tests
-│   ├── 📄 widget_test.dart      # Contoh widget test
-│   └── 📄 unit_test.dart        # Contoh unit test
+│   └── 📄 widget_test.dart      # Widget test example
 │
 ├── 📂 build/                      # Build Output (Generated)
-│   ├── 📂 app/                   # Compiled app files
-│   ├── 📂 flutter_assets/        # Assets yang sudah digabung
-│   └── 📂 outputs/               # APK, AAB, dll
+│   └── 📂 app/outputs/           # APK, AAB, dll
 │
-└── 📂 img/                        # Assets (Gambar & Logo)
-    ├── 📄 logo_withtext.png     # Logo aplikasi
-    └── ...                       # Gambar lainnya
+└── 📂 img/                        # Assets (Images & Icons)
+    ├── 📂 ss_light/             # Light mode screenshots
+    ├── 📂 ss_dark/              # Dark mode screenshots
+    ├── 📄 logo.png              # App logo
+    └── 📄 logo_withtext.png     # Logo with text
 ```
 
-### **📚 Penjelasan Struktur Folder Penting:**
+### **📊 Database Schema (Supabase PostgreSQL)**
 
-| Folder | Fungsi |
-|--------|--------|
-| `lib/data/` | Mengelola data dari Supabase, model data, dan API services |
-| `lib/pages/` | UI screens/halaman aplikasi (Auth, Home, Transactions, dll) |
-| `lib/presentation/` | Business logic, state management, dan reusable widgets |
-| `lib/utils/` | Fungsi utility, konstanta, validators, dan helpers |
-| `lib/l10n/` | File localization untuk multi-bahasa |
-| `android/` & `ios/` | Konfigurasi native untuk Android dan iOS |
-| `web/`, `windows/`, `linux/` | Platform-specific configurations |
-| `test/` | Unit tests dan widget tests untuk testing |
+#### **Users Table**
+```
+users
+├── user_id (SERIAL PRIMARY KEY)
+├── username (VARCHAR 255)
+├── email (TEXT UNIQUE NOT NULL)
+├── password (TEXT - hashed by Supabase Auth)
+├── total_balance (DOUBLE PRECISION, DEFAULT 0)
+└── created_at (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+```
+**Fungsi**: Menyimpan data user yang register/login
+
+---
+
+#### **Categories Table**
+```
+categories
+├── category_id (SERIAL PRIMARY KEY)
+├── type (VARCHAR 50: 'income' atau 'expense')
+└── name (VARCHAR 100: 'Gaji', 'Makanan', dll)
+```
+**Fungsi**: Kategori transaksi yang bisa dipilih user
+**Default Categories**:
+- Income: Gaji, Hadiah, Investasi
+- Expense: Makanan & Minuman, Transportasi, Belanja, Tagihan, Hiburan, Kesehatan, Pendidikan
+
+---
+
+#### **Accounts Table**
+```
+accounts
+├── account_id (SERIAL PRIMARY KEY)
+├── user_id (INTEGER FK → users)
+├── account_name (VARCHAR 100: 'BCA', 'Cash', dll)
+├── account_type (VARCHAR 50: 'Bank', 'Cash', 'E-Wallet')
+├── balance (DOUBLE PRECISION, DEFAULT 0)
+└── created_at (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+```
+**Fungsi**: Menyimpan akun user (bank, cash, e-wallet)
+**Relations**: Satu user bisa punya banyak accounts
+
+---
+
+#### **Transactions Table**
+```
+transactions
+├── transaction_id (SERIAL PRIMARY KEY)
+├── user_id (INTEGER FK → users)
+├── account_id (INTEGER FK → accounts)
+├── destination_account_id (INTEGER FK → accounts, NULLABLE)
+├── category_id (INTEGER FK → categories, NULLABLE)
+├── type (VARCHAR 50: 'expense', 'income', 'transfer')
+├── amount (DOUBLE PRECISION NOT NULL)
+├── description (VARCHAR 255, NULLABLE)
+├── date (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+└── created_at (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+```
+**Fungsi**: Menyimpan semua transaksi user
+**Relations**:
+- Linked ke user, account, dan category
+- destination_account_id hanya digunakan untuk transfer type
+- Auto-update account balance setiap kali ada transaksi baru
+
+---
+
+#### **Budgets Table**
+```
+budgets
+├── budget_id (SERIAL PRIMARY KEY)
+├── user_id (INTEGER FK → users)
+├── title (VARCHAR 255)
+├── amount (DOUBLE PRECISION)
+├── category_id (INTEGER FK → categories, NULLABLE)
+├── period (VARCHAR 50: 'monthly', 'yearly')
+├── created_at (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+└── updated_at (TIMESTAMP WITH TIME ZONE, DEFAULT NOW())
+```
+**Fungsi**: Menyimpan budget yang dibuat user
+**Relations**: Linked ke user dan category
+**Features**:
+- Auto-track pengeluaran vs budget amount
+- Calculate spent amount dari transactions
+- Display progress percentage
+
+### **📚 Database Relationships Diagram**
+
+```
+┌──────────────┐
+│    users     │
+│   (user_id)  │
+└──────┬───────┘
+       │
+       ├─────────────────┬──────────────────┬──────────────────┐
+       │                 │                  │                  │
+       ▼                 ▼                  ▼                  ▼
+  ┌─────────┐    ┌──────────────┐   ┌────────────┐   ┌───────────────┐
+  │ accounts │    │ transactions │   │  budgets   │   │ profiles      │
+  └─────────┘    └──────────────┘   └────────────┘   └───────────────┘
+       │                 │                  │
+       │                 ├──────────────────┤
+       │                 │                  │
+       │                 ▼                  ▼
+       │          ┌──────────────┐
+       └─────────▶│  categories  │
+                  └──────────────┘
+```
+
+---
+
+### **🔐 Security Features (Row Level Security)**
+
+Semua table memiliki RLS policies:
+- User hanya bisa akses datanya sendiri (based on `user_id`)
+- Query otomatis di-filter: `WHERE user_id = auth.uid()`
+- Zero chance data leak antar user
+
+### **📝 Catatan Database**
+
+| Aspek | Detail |
+|-------|--------|
+| **Database Type** | PostgreSQL (via Supabase) |
+| **Real-time Sync** | ✅ Enabled (subscribe to changes) |
+| **Backup** | ✅ Auto-backup by Supabase |
+| **API** | ✅ Auto-generated REST API |
+| **Authentication** | ✅ Built-in JWT & RLS |
+| **Offline Support** | ✅ Local cache via SharedPreferences |
 
 ---
 
