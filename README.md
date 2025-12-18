@@ -322,25 +322,22 @@ spendsense/
 │   │       ├── local_storage_service.dart # Local storage (SharedPreferences)
 │   │       └── theme_service.dart         # Theme management (Light/Dark)
 │   │
-│   ├── 📂 pages/                  # UI Pages/Screens (Screens)
-│   │   ├── splash_screen.dart           # Loading screen pertama
-│   │   ├── login_page.dart              # Login page
-│   │   ├── register_page.dart           # Register page
-│   │   ├── home_page.dart               # Home/Dashboard
-│   │   ├── transactions_page.dart       # List transaksi
-│   │   ├── transactions_page_new.dart   # New transactions view
-│   │   ├── add_transaction_page.dart    # Add/Edit transaction
-│   │   ├── accounts_page.dart           # List accounts
-│   │   ├── add_account_page.dart        # Add/Edit account
-│   │   ├── edit_account_balance_page.dart # Edit balance
-│   │   ├── add_budget_page.dart         # Add/Edit budget
-│   │   ├── budget_detail_page.dart      # Budget detail & tracking
-│   │   ├── statistics_page.dart         # Charts & analytics
-│   │   ├── settings_page.dart           # Settings & preferences
-│   │   └── upload_image_page.dart       # Image upload feature
-│   │
 │   ├── 📂 presentation/           # Presentation Layer
-│   │   ├── 📂 pages/             # Pages (empty - semua di lib/pages)
+│   │   ├── 📂 pages/             # Main application pages
+│   │   │   ├── splash_screen.dart           # Loading screen pertama
+│   │   │   ├── login_page.dart              # Login page
+│   │   │   ├── register_page.dart           # Register page
+│   │   │   ├── home_page.dart               # Home/Dashboard
+│   │   │   ├── transactions_page.dart       # List transaksi
+│   │   │   ├── transactions_page_new.dart   # New transactions view
+│   │   │   ├── add_transaction_page.dart    # Add/Edit transaction
+│   │   │   ├── accounts_page.dart           # List accounts
+│   │   │   ├── add_account_page.dart        # Add/Edit account
+│   │   │   ├── edit_account_balance_page.dart # Edit balance
+│   │   │   ├── add_budget_page.dart         # Add/Edit budget
+│   │   │   ├── budget_detail_page.dart      # Budget detail & tracking
+│   │   │   ├── statistics_page.dart         # Charts & analytics
+│   │   │   └── settings_page.dart           # Settings & preferences
 │   │   │
 │   │   └── 📂 widgets/           # Reusable UI Components
 │   │       ├── account_card.dart         # Account card widget
@@ -354,12 +351,14 @@ spendsense/
 │   │
 │   └── 📂 l10n/                   # Localization (Multi-language)
 │       ├── app_en.arb           # English translations
-│       └── app_id.arb           # Indonesian translations
+│       ├── app_localizations.dart
+│       └── app_localizations_en.dart
 │
 ├── 📂 android/                    # Android Native Code
 │   ├── 📄 build.gradle.kts       # Gradle configuration
 │   ├── 📄 local.properties       # Local Android SDK path
 │   ├── 📄 gradle.properties      # Gradle properties
+│   ├── 📄 settings.gradle.kts
 │   ├── 📂 app/
 │   │   ├── build.gradle.kts
 │   │   └── 📂 src/
@@ -367,11 +366,19 @@ spendsense/
 │   │       ├── debug/
 │   │       └── profile/
 │   └── 📂 gradle/
+│       └── wrapper/
 │
 ├── 📂 ios/                        # iOS Native Code
+│   ├── 📂 Flutter/               # Flutter iOS configuration
 │   ├── 📂 Runner/                # iOS app resources
 │   ├── 📂 Runner.xcodeproj/      # Xcode project
-│   └── 📂 Runner.xcworkspace/    # Cocoapods workspace
+│   ├── 📂 Runner.xcworkspace/    # Cocoapods workspace
+│   └── 📂 RunnerTests/           # iOS tests
+│
+├── 📂 macos/                      # macOS Platform
+│   ├── 📂 Flutter/               # Flutter macOS configuration
+│   ├── 📂 Runner/                # macOS app resources
+│   └── 📂 Runner.xcodeproj/      # Xcode project
 │
 ├── 📂 web/                        # Web Platform
 │   ├── 📄 index.html             # Web entry point
@@ -391,12 +398,27 @@ spendsense/
 ├── 📂 test/                       # Unit & Widget Tests
 │   └── 📄 widget_test.dart      # Widget test example
 │
-├── 📂 build/                      # Build Output (Generated)
-│   └── 📂 app/outputs/           # APK, AAB, dll
+├── 📂 build/                      # Build
+│   ├── 📂 flutter_assets/        # Compiled assets
+│   └── 📂 reports/               # Build reports
 │
 └── 📂 img/                        # Assets (Images & Icons)
     ├── 📂 ss_light/             # Light mode screenshots
+    │   ├── ss_splash.png
+    │   ├── ss_login.png
+    │   ├── ss_home.png
+    │   ├── ss_stats.png
+    │   ├── ss_history.png
+    │   ├── ss_accounts.png
+    │   ├── ss_input.png
+    │   ├── ss_budget.png
+    │   └── ss_profile.png
     ├── 📂 ss_dark/              # Dark mode screenshots
+    │   ├── ss_home_dark.png
+    │   ├── ss_stats_dark.png
+    │   ├── ss_history_dark.png
+    │   ├── ss_accounts_dark.png
+    │   └── ss_profile_dark.png
     ├── 📄 logo.png              # App logo
     └── 📄 logo_withtext.png     # Logo with text
 ```
