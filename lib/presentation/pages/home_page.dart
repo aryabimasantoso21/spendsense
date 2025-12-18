@@ -7,7 +7,6 @@ import '../../data/services/local_storage_service.dart';
 import '../../data/services/supabase_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
-import '../widgets/budget_card.dart';
 import '../widgets/budget_card_item.dart';
 
 import 'add_transaction_page.dart';

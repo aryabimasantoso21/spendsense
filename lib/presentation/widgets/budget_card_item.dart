@@ -68,12 +68,15 @@ class BudgetCardItem extends StatelessWidget {
                   _getPeriodLabel(),
                   style: AppTextStyles.overline.copyWith(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    color: Colors.white,
                   ),
                 ),
                 if (isOverBudget)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.expense.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -88,7 +91,7 @@ class BudgetCardItem extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Over Budget!}',
+                          'Over Budget!',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -107,6 +110,7 @@ class BudgetCardItem extends StatelessWidget {
               budget.title,
               style: AppTextStyles.subtitle.copyWith(
                 fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.white : null,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
