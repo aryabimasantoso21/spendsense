@@ -17,8 +17,7 @@ Langsung install aplikasi di Android tanpa perlu setup development environment!
 
 #### **1️⃣ Download APK**
 1. Buka halaman [Releases](https://github.com/aryabimasantoso21/spendsense/releases)
-2. Download file **`spendsense-v0.1.0.apk`** dari release terbaru
-3. Atau download langsung: [SpendSense v0.1.0](https://github.com/aryabimasantoso21/spendsense/releases/tag/v0.1.0)
+2. Download file **`spendsense-v0.2.0.apk`** dari release terbaru
 
 #### **2️⃣ Install di Android**
 1. **Transfer APK ke HP Android** (via USB, Bluetooth, atau download langsung di HP)
